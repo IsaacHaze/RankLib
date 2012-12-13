@@ -50,7 +50,7 @@ public class DataPoint {
 		Arrays.fill(fVals, INFINITY);
 		int lastFeature = -1;
 		try {
-			int idx = text.lastIndexOf("#");
+			int idx = text.indexOf("#");
 			if(idx != -1)
 			{
 				description = text.substring(idx);
