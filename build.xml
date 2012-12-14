@@ -13,8 +13,10 @@
     <!-- Create the build directory structure used by compile -->
     <delete dir="${build}"/>
     <mkdir dir="${build}"/>
+<!-- don't delete a directory under svn control
     <delete dir="${dist}"/>
     <mkdir dir="${dist}"/>
+ -->
   </target>
 
   <path id="compile.classpath">
