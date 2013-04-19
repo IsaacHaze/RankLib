@@ -188,7 +188,7 @@ public class ExpressionEvaluator {
 				else//operand
 				{
 					try {
-						double v = Double.parseDouble(token);
+						Double.parseDouble(token);						
 					}
 					catch(Exception ex)
 					{

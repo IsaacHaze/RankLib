@@ -278,4 +278,20 @@ public class FileUtils {
 		}
 		return 1;
     }
+
+	public static String getFileName(String pathName)
+	{
+		int idx1 = pathName.lastIndexOf("/");
+		int idx2 = pathName.lastIndexOf("\\");
+		int idx = (idx1 > idx2)?idx1:idx2;
+		return pathName.substring(idx+1);
+	}
+	public static String makePathStandard(String directory)
+	{
+		String dir = directory;
+		char c = dir.charAt(dir.length()-1);
+		if(c != '/' && c != '\\')
+			dir += File.pathSeparator;
+		return dir;
+	}
 }

@@ -62,7 +62,7 @@ public class RankList {
 		rl.remove(k);
 	}
 	
-	public RankList getRanking(int fid)
+	public RankList getRanking(short fid)
 	{
 		double[] score = new double[rl.size()];
 		for(int i=0;i<rl.size();i++)

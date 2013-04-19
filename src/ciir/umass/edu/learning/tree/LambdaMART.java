@@ -16,9 +16,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import ciir.umass.edu.eval.Evaluator;
 import ciir.umass.edu.learning.CoorAscent;
 import ciir.umass.edu.learning.DataPoint;
-import ciir.umass.edu.learning.Evaluator;
 import ciir.umass.edu.learning.RANKER_TYPE;
 import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.Ranker;
@@ -266,7 +266,7 @@ public class LambdaMART extends Ranker {
 			//Update the model's outputs on all training samples
 			for(int i=0;i<modelScores.length;i++)
 				modelScores[i] += learningRate * rt.eval(martSamples[i]);
-
+			
 			//Evaluate the current model
 			scoreOnTrainingData = computeModelScoreOnTraining();
 			//**** NOTE ****
@@ -478,7 +478,10 @@ public class LambdaMART extends Ranker {
 				s1 += pseudoResponses[k];
 				s2 += martSamples[k].getCached();
 			}
-			s.setOutput(s1/s2);
+			if(s2 == 0)
+				s.setOutput(0);
+			else
+				s.setOutput(s1/s2);
 		}
 	}
 	protected int[] sortSamplesByFeature(DataPoint[] samples, int fid)

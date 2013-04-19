@@ -23,7 +23,6 @@ import ciir.umass.edu.learning.neuralnet.RankNet;
 import ciir.umass.edu.learning.tree.MART;
 import ciir.umass.edu.learning.tree.LambdaMART;
 import ciir.umass.edu.learning.tree.RFRanker;
-import ciir.umass.edu.utilities.FileUtils;
 
 /**
  * @author vdang
@@ -32,7 +31,7 @@ import ciir.umass.edu.utilities.FileUtils;
  */
 public class RankerFactory {
 
-	protected Ranker[] rFactory = new Ranker[]{new MART(), new RankBoost(), new RankNet(), new AdaRank(), new CoorAscent(), new LambdaRank(), new LambdaMART(), new ListNet(), new RFRanker()};
+	protected Ranker[] rFactory = new Ranker[]{new MART(), new RankBoost(), new RankNet(), new AdaRank(), new CoorAscent(), new LambdaRank(), new LambdaMART(), new ListNet(), new RFRanker(), new LinearRegRank()};
 	protected static Hashtable<String, RANKER_TYPE> map = new Hashtable<String, RANKER_TYPE>();
 	
 	public RankerFactory()
@@ -46,8 +45,8 @@ public class RankerFactory {
 		map.put(createRanker(RANKER_TYPE.LAMBDAMART).name().toUpperCase(), RANKER_TYPE.LAMBDAMART);
 		map.put(createRanker(RANKER_TYPE.LISTNET).name().toUpperCase(), RANKER_TYPE.LISTNET);
 		map.put(createRanker(RANKER_TYPE.RANDOM_FOREST).name().toUpperCase(), RANKER_TYPE.RANDOM_FOREST);
-	}
-	
+		map.put(createRanker(RANKER_TYPE.LINEAR_REGRESSION).name().toUpperCase(), RANKER_TYPE.LINEAR_REGRESSION);
+	}	
 	public Ranker createRanker(RANKER_TYPE type)
 	{
 		Ranker r = rFactory[type.ordinal() - RANKER_TYPE.MART.ordinal()].clone();
@@ -74,6 +73,7 @@ public class RankerFactory {
 		catch(Exception ex)
 		{
 			System.out.println("Error in RankerFactory.load(): " + ex.toString());
+			System.exit(1);
 		}
 		return r;
 	}

@@ -17,15 +17,56 @@ import ciir.umass.edu.learning.RankList;
 /**
  * @author vdang
  */
-public class ZScoreNormalizor implements Normalizer {
-
+public class ZScoreNormalizor extends Normalizer {
+	@Override
+	public void normalize(RankList rl) {
+		if(rl.size() == 0)
+		{
+			System.out.println("Error in SumNormalizor::normalize(): The input ranked list is empty");
+			System.exit(1);
+		}
+		int nFeature = rl.get(0).getFeatureCount();
+		float[] mean = new float[nFeature];
+		Arrays.fill(mean, 0);
+		for(int i=0;i<rl.size();i++)
+		{
+			DataPoint dp = rl.get(i);
+			for(int j=1;j<=nFeature;j++)
+				mean[j-1] += dp.getFeatureValue(j);
+		}
+		
+		for(int j=1;j<=nFeature;j++)
+		{
+			mean[j-1] = mean[j-1] / rl.size();
+			float std = 0;
+			for(int i=0;i<rl.size();i++)
+			{
+				DataPoint p = rl.get(i);
+				float x = p.getFeatureValue(j) - mean[j-1];
+				std += x*x;
+			}
+			std = (float) Math.sqrt(std / (rl.size()-1));
+			//normalize
+			if(std > 0)
+			{
+				for(int i=0;i<rl.size();i++)
+				{
+					DataPoint p = rl.get(i);
+					float x = (p.getFeatureValue(j) - mean[j-1])/std;//x ~ standard normal (0, 1)
+					p.setFeatureValue(j, x);
+				}
+			}
+		}
+	}
 	@Override
 	public void normalize(RankList rl, int[] fids) {
-		
+		if(rl.size() == 0)
+		{
+			System.out.println("Error in SumNormalizor::normalize(): The input ranked list is empty");
+			System.exit(1);
+		}
 		float[] mean = new float[fids.length];
-		float[] std = new float[fids.length];
 		Arrays.fill(mean, 0);
-		Arrays.fill(std, 0);
 		for(int i=0;i<rl.size();i++)
 		{
 			DataPoint dp = rl.get(i);
@@ -36,20 +77,21 @@ public class ZScoreNormalizor implements Normalizer {
 		for(int j=0;j<fids.length;j++)
 		{
 			mean[j] = mean[j] / rl.size();
+			float std = 0;
 			for(int i=0;i<rl.size();i++)
 			{
 				DataPoint p = rl.get(i);
 				float x = p.getFeatureValue(fids[j]) - mean[j];
-				std[j] += x*x;
+				std += x*x;
 			}
-			std[j] = (float) Math.sqrt(std[j] / (rl.size()-1));
+			std = (float) Math.sqrt(std / (rl.size()-1));
 			//normalize
-			if(std[j] > 0.0)
+			if(std > 0.0)
 			{
 				for(int i=0;i<rl.size();i++)
 				{
 					DataPoint p = rl.get(i);
-					float x = (p.getFeatureValue(fids[j]) - mean[j])/std[j];//x ~ standard normal (0, 1)
+					float x = (p.getFeatureValue(fids[j]) - mean[j])/std;//x ~ standard normal (0, 1)
 					p.setFeatureValue(fids[j], x);
 				}
 			}

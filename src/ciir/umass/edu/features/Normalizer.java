@@ -9,6 +9,8 @@
 
 package ciir.umass.edu.features;
 
+import java.util.List;
+
 import ciir.umass.edu.learning.RankList;
 
 /**
@@ -16,7 +18,28 @@ import ciir.umass.edu.learning.RankList;
  *
  * Abstract class for feature normalization
  */
-public interface Normalizer {
-	public void normalize(RankList rl, int[] fids);
-	public String name();
+public class Normalizer {
+	public void normalize(RankList rl)
+	{	
+		//need overriding in subclass
+	}
+	public void normalize(List<RankList> samples)
+	{
+		for(int i=0;i<samples.size();i++)
+			normalize(samples.get(i));
+	}
+	public void normalize(RankList rl, int[] fids)
+	{
+		//need overriding in subclass
+	}
+	public void normalize(List<RankList> samples, int[] fids)
+	{
+		for(int i=0;i<samples.size();i++)
+			normalize(samples.get(i), fids);
+	}
+	public String name()
+	{
+		//need overriding in subclass
+		return "";
+	}
 }

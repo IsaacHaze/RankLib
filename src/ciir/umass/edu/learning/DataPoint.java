@@ -18,36 +18,53 @@ import java.util.Arrays;
  * It should be general enough for other ranking applications as well (not limited to just IR I hope). 
  */
 public class DataPoint {
-	public static float INFINITY = -1000000.0f;
+	public static float UNKNOWN = -1000000;
 	public static int MAX_FEATURE = 51;
 	public static int FEATURE_INCREASE = 10;
 	
 	public static int featureCount = 0;
 	
+	//atributes
 	protected float label = 0.0f;//[ground truth] the real label of the data point (e.g. its degree of relevance according to the relevance judgment)
-	protected String id = "";//id of this datapoint (e.g. document-id, query-id, etc)
+	protected String id = "";//id of this datapoint (e.g. query-id)
 	protected float[] fVals = null;//fVals[0] is un-used. Feature id MUST start from 1
 	protected String description = "";
 	
+	//internal to learning procedures
 	protected double cached = -1.0;//the latest evaluation score of the learned model on this data point
 	
-	private String getKey(String pair)
+	protected String getKey(String pair)
 	{
 		return pair.substring(0, pair.indexOf(":"));
 	}
-	private String getValue(String pair)
+	protected String getValue(String pair)
 	{
 		return pair.substring(pair.lastIndexOf(":")+1);
 	}
 	
+	protected DataPoint(){}
+	public DataPoint(DataPoint dp)
+	{
+		label = dp.label;
+		id = dp.id;
+		description = dp.description;
+		cached = dp.cached;
+		fVals = new float[dp.fVals.length];
+		System.arraycopy(dp.fVals, 0, fVals, 0, dp.fVals.length);
+	}
 	/**
 	 * The input must have the form: 
 	 * @param text
 	 */
 	public DataPoint(String text)
 	{
+		parse(text);
+	}
+	protected int parse(String text)
+	{
+		int nonZeroCount = 0;
 		fVals = new float[MAX_FEATURE];
-		Arrays.fill(fVals, INFINITY);
+		Arrays.fill(fVals, UNKNOWN);
 		int lastFeature = -1;
 		try {
 			int idx = text.indexOf("#");
@@ -72,10 +89,12 @@ public class DataPoint {
 						MAX_FEATURE += FEATURE_INCREASE;
 					float[] tmp = new float [MAX_FEATURE];
 					System.arraycopy(fVals, 0, tmp, 0, fVals.length);
-					Arrays.fill(tmp, fVals.length, MAX_FEATURE, INFINITY);
+					Arrays.fill(tmp, fVals.length, MAX_FEATURE, UNKNOWN);
 					fVals = tmp;
 				}
 				fVals[f] = Float.parseFloat(val);
+				if(fVals[f] != 0 && fVals[f] != UNKNOWN)
+					nonZeroCount++;
 				if(f > featureCount)//#feature will be the max_id observed
 					featureCount = f;
 				if(f > lastFeature)//note than lastFeature is the max_id observed for this current data point, whereas featureCount is the max_id observed on the entire dataset
@@ -88,8 +107,10 @@ public class DataPoint {
 		}
 		catch(Exception ex)
 		{
-			System.out.println("Error in DataPoint(text) constructor");
+			System.out.println("Error in DataPoint::parse(): " + ex.toString());
+			System.exit(1);
 		}
+		return nonZeroCount;
 	}
 	
 	public String getID()
@@ -108,44 +129,6 @@ public class DataPoint {
 	{
 		this.label = label;
 	}
-
-	public float getFeatureValue(int fid)
-	{
-		if(fid >= fVals.length)
-			return 0.0f;
-		if(fVals[fid] < INFINITY+1)//+1 just to be safe
-			return 0.0f;
-		return fVals[fid];
-	}
-	public void setFeatureValue(int fid, float fval) 
-	{
-		fVals[fid] = fval;
-	}
-	
-	public int getFeatureCount()
-	{
-		return featureCount;
-	}
-	public float[] getFeatureVector(int[] featureID)
-	{
-		float[] fvector = new float[featureID.length];
-		for(int i=0;i<featureID.length;i++)
-			fvector[i] = getFeatureValue(featureID[i]);
-		return fvector;
-	}
-	public float[] getFeatureVector()
-	{
-		return fVals;
-	}
-	public float[] getExternalFeatureVector()
-	{
-		float[] ufVals = new float[fVals.length];
-		System.arraycopy(fVals, 0, ufVals, 0, fVals.length);
-		for(int i=0;i<ufVals.length;i++)
-			if(ufVals[i] > INFINITY + 1)//+1 just to be safe ==> NOT padded features
-				ufVals[i] = 0.0f;
-		return ufVals;
-	}
 	public String getDescription()
 	{
 		return description;
@@ -154,32 +137,6 @@ public class DataPoint {
 	{
 		this.description = description;
 	}
-	
-	public void normalize(int[] fids, float[] norm)
-	{
-		for(int i=0;i<fids.length;i++)
-			if(norm[i] > 0.0)
-				fVals[fids[i]] /= norm[i];
-	}
-	public String toString()
-	{
-		String output = label + " " + "id:" + id + " ";
-		for(int i=1;i<fVals.length;i++)
-			if(fVals[i] > INFINITY+1)//+1 just to be safe
-				output += i + ":" + fVals[i] + ((i==fVals.length-1)?"":" ");
-		output += " " + description;
-		return output;
-	}
-
-	public void addFeatures(float[] values)
-	{
-		float[] tmp = new float[(featureCount+1) + values.length];
-		System.arraycopy(fVals, 0, tmp, 0, fVals.length);
-		Arrays.fill(tmp, fVals.length, featureCount+1, INFINITY);
-		System.arraycopy(values, 0, tmp, featureCount+1, values.length);
-		fVals = tmp;
-	}
-	
 	public void setCached(double c)
 	{
 		cached = c;
@@ -193,4 +150,41 @@ public class DataPoint {
 	{
 		cached = -100000000.0f;;
 	}
+	public String toString()
+	{
+		String output = label + " " + "id:" + id + " ";
+		for(int i=1;i<fVals.length;i++)
+			if(fVals[i] != UNKNOWN)
+				output += i + ":" + fVals[i] + ((i==fVals.length-1)?"":" ");
+		output += " " + description;
+		return output;
+	}
+	
+	public int getFeatureCount()
+	{
+		return featureCount;
+	}
+	
+	//Need overriding in sub-classes
+	public float getFeatureValue(int fid)
+	{
+		if(fid <= 0 || fid >= fVals.length)
+		{
+			System.out.println("Error in DataPoint::getFeatureValue(): requesting unspecified feature, fid=" + fid);
+			System.out.println("System will now exit.");
+			System.exit(1);
+		}
+		if(fVals[fid] == UNKNOWN)//value for unspecified feature is 0
+			return 0;
+		return fVals[fid];
+	}
+	public void setFeatureValue(int fid, float fval) 
+	{
+		if(fid <= 0 || fid >= fVals.length)
+		{
+			System.out.println("Error in DataPoint::setFeatureValue(): feature (id=" + fid + ") not found.");
+			System.exit(1);
+		}
+		fVals[fid] = fval;
+	}	
 }
