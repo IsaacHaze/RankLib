@@ -84,6 +84,7 @@ public class CoorAscent extends Ranker {
 			//initialize weight vector
 			for(int i=0;i<weight.length;i++)
 				weight[i] = 1.0f/features.length;
+			
 			current_feature = -1;
 			double startScore = scorer.score(rank(samples));//compute all the scores (in whatever metric specified) and store them as cache
 			
@@ -108,18 +109,19 @@ public class CoorAscent extends Ranker {
 					current_feature = fids[i];//this will trigger the "else" branch in the procedure rank()
 					
 					double origWeight = weight[fids[i]];
-					double bestWeightValue = origWeight;//0.0;
+					double totalStep = 0;
+					double bestTotalStep = 0;					
 					boolean succeeds = false;//whether or not we succeed in finding a better weight value for the current feature
 					for(int s=0;s<sign.length;s++)//search by both increasing and decreasing
 					{
-						double step = 0.001;
-						if(origWeight != 0.0 && step > 0.5 * Math.abs(origWeight))
+						double step = 0.001 * sign[s];
+						if(origWeight != 0.0 && Math.abs(step) > 0.5 * Math.abs(origWeight))
 					    	step = stepBase * Math.abs(origWeight);
-						double totalStep = step;
+						totalStep = step;
 						for(int j=0;j<nMaxIteration;j++)
 						{
-							double w = origWeight + totalStep * sign[s];
-							weight_change = w - weight[fids[i]];//weight_change is used in the "else" branch in the procedure rank()
+							double w = origWeight + totalStep;
+							weight_change = step;//weight_change is used in the "else" branch in the procedure rank()
 							weight[fids[i]] = w;
 							double score = scorer.score(rank(samples));
 							if(regularized)
@@ -131,20 +133,22 @@ public class CoorAscent extends Ranker {
 							if(score > bestScore)//better than the local best, replace the local best with this model
 							{
 								bestScore = score;
-								bestWeightValue = weight[fids[i]];
+								bestTotalStep = totalStep;
 								succeeds = true;
-								
-								String bw = ((bestWeightValue>0.0)?"+":"") + SimpleMath.round(bestWeightValue, 4);
+								String bw = ((weight[fids[i]]>0)?"+":"") + SimpleMath.round(weight[fids[i]], 4);
 								PRINTLN(new int[]{7, 8, 7}, new String[]{features[fids[i]]+"", bw+"", SimpleMath.round(bestScore, 4)+""});
 							}
-							step *= stepScale;
-							totalStep += step;
+							if(j < nMaxIteration-1)
+							{
+								step *= stepScale;
+								totalStep += step;
+							}
 						}
 						if(succeeds)
 							break;//no need to search the other direction (e.g. sign = '-')
-						else
+						else if(s < sign.length-1)
 						{
-							weight_change = origWeight - weight[fids[i]];
+							weight_change = -totalStep;
 							updateCached();//restore the cached to reflect the orig. weight for the current feature 
 							//so that we can start searching in the other direction (since the optimization in the first direction failed)
 							weight[fids[i]] = origWeight;//restore the weight to its initial value
@@ -152,25 +156,25 @@ public class CoorAscent extends Ranker {
 					}
 					if(succeeds) 
 					{
-						weight_change = bestWeightValue - weight[fids[i]];
+						weight_change = bestTotalStep - totalStep;
 						updateCached();//restore the cached to reflect the best weight for the current feature
-						weight[fids[i]] = bestWeightValue;
+						weight[fids[i]] = origWeight + bestTotalStep;
 						consecutive_fails = 0;//since we found a better weight value
-						//then normalize the new weight vector
 						double sum = normalize(weight);
 						scaleCached(sum);
-						copy(weight, bestWeight);
+						copy(weight, bestWeight);						
 					}
 					else
 					{
 						consecutive_fails++;
-						weight_change = origWeight - weight[fids[i]];
+						weight_change = -totalStep;
 						updateCached();//restore the cached to reflect the orig. weight for the current feature since the optimization failed
 						//Restore the orig. weight value
 						weight[fids[i]] = origWeight;
 					}
 				}
-				PRINTLN("------------------------------");				
+				PRINTLN("------------------------------");
+				
 				//if we haven't made much progress then quit
 				if(bestScore - startScore < tolerance)
 					break;
@@ -189,6 +193,7 @@ public class CoorAscent extends Ranker {
 		PRINTLN("---------------------------------");
 		PRINTLN("Finished sucessfully.");
 		PRINTLN(scorer.name() + " on training data: " + scoreOnTrainingData);
+
 		if(validationSamples != null)
 		{
 			bestScoreOnValidationData = scorer.score(rank(validationSamples));
@@ -362,8 +367,17 @@ public class CoorAscent extends Ranker {
 		double sum = 0.0;
 		for(int j=0;j<weights.length;j++)
 			sum += Math.abs(weights[j]);
-		for(int j=0;j<weights.length;j++)
-			weights[j] /= sum;
+		if(sum > 0)
+		{
+			for(int j=0;j<weights.length;j++)
+				weights[j] /= sum;
+		}
+		else
+		{
+			sum = 1;
+			for(int j=0;j<weights.length;j++)
+				weights[j] = 1.0/weights.length;
+		}
 		return sum;
 	}
 

@@ -17,10 +17,37 @@ import ciir.umass.edu.learning.RankList;
 /**
  * @author vdang
  */
-public class SumNormalizor implements Normalizer {
-
+public class SumNormalizor extends Normalizer {
+	@Override
+	public void normalize(RankList rl) {
+		if(rl.size() == 0)
+		{
+			System.out.println("Error in SumNormalizor::normalize(): The input ranked list is empty");
+			System.exit(1);
+		}
+		int nFeature = rl.get(0).getFeatureCount();
+		float[] norm = new float[nFeature];
+		Arrays.fill(norm, 0);
+		for(int i=0;i<rl.size();i++)
+		{
+			DataPoint dp = rl.get(i);
+			for(int j=1;j<=nFeature;j++)
+				norm[j-1] += Math.abs(dp.getFeatureValue(j));
+		}
+		for(int i=0;i<rl.size();i++)
+		{
+			DataPoint dp = rl.get(i);
+			for(int j=1;j<=nFeature;j++)
+				dp.setFeatureValue(j, dp.getFeatureValue(j)/norm[j-1]);
+		}
+	}
 	@Override
 	public void normalize(RankList rl, int[] fids) {
+		if(rl.size() == 0)
+		{
+			System.out.println("Error in SumNormalizor::normalize(): The input ranked list is empty");
+			System.exit(1);
+		}
 		float[] norm = new float[fids.length];
 		Arrays.fill(norm, 0);
 		for(int i=0;i<rl.size();i++)
@@ -32,7 +59,8 @@ public class SumNormalizor implements Normalizer {
 		for(int i=0;i<rl.size();i++)
 		{
 			DataPoint dp = rl.get(i);
-			dp.normalize(fids, norm);
+			for(int j=0;j<fids.length;j++)
+				dp.setFeatureValue(fids[j], dp.getFeatureValue(fids[j])/norm[j]);
 		}
 	}
 	public String name()

@@ -132,7 +132,7 @@ public class NDCGScorer extends MetricScorer {
 			size = rel.size();
 		
 		int[] idx = Sorter.sort(rel, false);
-		double dcg = 0.0;
+		double dcg = 0;
 		for(int i=1;i<=size;i++)
 		{
 			dcg += (Math.pow(2.0, rel.get(idx[i-1]))-1.0)/SimpleMath.logBase2(i+1);
