@@ -20,42 +20,65 @@ public class Analyzer {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 
-		Analyzer a = new Analyzer();
-		List<String> l = new ArrayList<String>();
-		//a.compare("output/", "ca.feature.base");
+		String directory = "";
+		String baseline = "";
+		if(args.length != 2)
+		{
+			System.out.println("Usage: java -cp bin/RankLib.jar ciir.umass.edu.eval.Analyzer <Params>");
+			System.out.println("Params:");
+			System.out.println("\t-all <directory>\tDirectory of performance files (one per system)");
+			System.out.println("\t-base <file>\t\tPerformance file for the baseline (MUST be in the same directory)");
+			System.out.println("\t[ -np ] \t\tNumber of permutation (Fisher randomization test) [default=" + RandomPermutationTest.nPermutation + "]");
+			return;
+		}
 		
-		HashMap<String, Double> m1 = a.read("output/ca.feature.base");
-		HashMap<String, Double> m2 = a.read("output/ca.feature.base.everything");
-		RandomPermutationTest randomizedTest = new RandomPermutationTest();
-		System.out.println("p-value = " + randomizedTest.test(m1, m2));
+		for(int i=0;i<args.length;i++)
+		{
+			if(args[i].compareTo("-all")==0)
+				directory = args[++i];
+			else if(args[i].compareTo("-base")==0)
+				baseline = args[++i];
+			else if(args[i].compareTo("-np")==0)
+				RandomPermutationTest.nPermutation = Integer.parseInt(args[++i]);
+		}
+		
+		Analyzer a = new Analyzer();
+		a.compare(directory, baseline);
+		//a.compare("output/", "ca.feature.base");
 	}
 
 	class Result {
 		int status = 0;//success
 		int win = 0;
 		int loss = 0;
-		int[] countByImpRange = null;
+		int[] countByImprovementRange = null;
 	}
 	
+	private RandomPermutationTest randomizedTest = new RandomPermutationTest();
 	private static double[] improvementRatioThreshold = new double[]{-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1000};
-	private int zero = 4;
-	public int locateSegment(double value)
+	private int indexOfZero = 4;
+	private int locateSegment(double value)
 	{
 		if(value > 0)
 		{
-			for(int i=zero;i<improvementRatioThreshold.length;i++)
+			for(int i=indexOfZero;i<improvementRatioThreshold.length;i++)
 				if(value <= improvementRatioThreshold[i])
 					return i;
 		}
 		else if(value < 0)
 		{
-			for(int i=0;i<=zero;i++)
+			for(int i=0;i<=indexOfZero;i++)
 				if(value < improvementRatioThreshold[i])
 					return i;
 		}
 		return -1;
 	}
 	
+	/**
+	 * Read performance (in some measure of effectiveness) file. Expecting: id [space]* metric-text [space]* performance
+	 * @param filename
+	 * @return Mapping from ranklist-id --> performance
+	 */
 	public HashMap<String, Double> read(String filename)
 	{
 		HashMap<String, Double> performance = new HashMap<String, Double>();		
@@ -73,7 +96,7 @@ public class Analyzer {
 					content = content.replace("  ", " ");
 				content = content.replace(" ", "\t");
 				String[] s = content.split("\t");
-				String measure = s[0];
+				//String measure = s[0];
 				String id = s[1];
 				double p = Double.parseDouble(s[2]);
 				performance.put(id, p);
@@ -88,11 +111,15 @@ public class Analyzer {
 		}
 		return performance;
 	}
-	
+	/**
+	 * Compare the performance of a set of systems to that of a baseline system 
+	 * @param directory Contain files denoting the performance of the target systems to be compared  
+	 * @param baseFile Performance file for the baseline system
+	 */
 	public void compare(String directory, String baseFile)
 	{
 		directory = FileUtils.makePathStandard(directory);
-		List<String> targets = FileUtils.getAllFiles2(directory);
+		List<String> targets = FileUtils.getAllFiles2(directory);//ONLY filenames are stored 
 		for(int i=0;i<targets.size();i++)
 		{
 			if(targets.get(i).compareTo(baseFile) == 0)
@@ -101,11 +128,16 @@ public class Analyzer {
 				i--;
 			}
 			else
-				targets.set(i, directory+targets.get(i));
+				targets.set(i, directory+targets.get(i));//convert filename to full path
 		}
-		compare(directory+baseFile, targets);
+		compare(targets, directory+baseFile);
 	}
-	public void compare(String baseFile, List<String> targetFiles)
+	/**
+	 * Compare the performance of a set of systems to that of a baseline system 
+	 * @param targetFiles Performance files of the target systems to be compared (full path)
+	 * @param baseFile Performance file for the baseline system
+	 */
+	public void compare(List<String> targetFiles, String baseFile)
 	{
 		HashMap<String, Double> base = read(baseFile);
 		List<HashMap<String, Double>> targets = new ArrayList<HashMap<String, Double>>();
@@ -116,33 +148,81 @@ public class Analyzer {
 		}
 		Result[] rs = compare(base, targets);
 		
+		//overall comparison
 		System.out.println("");
-		System.out.println("System\tPerformance\tImprovement\tWin\tLoss");
+		System.out.println("");
+		System.out.println("Overall comparison");
+		System.out.println("------------------------------------------------------------------------");
+		System.out.println("System\tPerformance\tImprovement\tWin\tLoss\tp-value");
 		System.out.println(FileUtils.getFileName(baseFile) + " [baseline]\t" + SimpleMath.round(base.get("all").doubleValue(), 4));
 		for(int i=0;i<rs.length;i++)
 		{
 			if(rs[i].status == 0)
 			{
 				double delta = targets.get(i).get("all").doubleValue() - base.get("all").doubleValue();
-				String msg = FileUtils.getFileName(targetFiles.get(i)) + "\t" + SimpleMath.round(targets.get(i).get("all").doubleValue(), 4) + "\t" + ((delta>0)?"+":"") + SimpleMath.round(delta, 4) + "\t" + rs[i].win + "\t" + rs[i].loss;
+				double dp = delta*100/base.get("all").doubleValue();
+				String msg = FileUtils.getFileName(targetFiles.get(i)) + "\t" + SimpleMath.round(targets.get(i).get("all").doubleValue(), 4);
+				msg += "\t" + ((delta>0)?"+":"") + SimpleMath.round(delta, 4) + " (" + ((delta>0)?"+":"") + SimpleMath.round(dp, 2) + "%)";
+				msg += "\t" + rs[i].win + "\t" + rs[i].loss;
+				msg += "\t" + randomizedTest.test(targets.get(i), base) + "";
 				System.out.println(msg);
 			}
 			else
-				System.out.println("[" + targetFiles.get(i) + "] skipped: contains different ranked lists (ids) compared to the baseline");
+				System.out.println("WARNING: [" + targetFiles.get(i) + "] skipped: NOT comparable to the baseline due to different ranked list IDs.");
 		}
-		
-		/*for(int i=0;i<targets.size();i++)
+		//in more details
+		System.out.println("");
+		System.out.println("");
+		System.out.println("Detailed break down");
+		System.out.println("------------------------------------------------------------------------");
+		String header = "";
+		String[] tmp = new String[improvementRatioThreshold.length];
+		for(int i=0;i<improvementRatioThreshold.length;i++)
 		{
-			double delta = targets.get(i).get("all").doubleValue() - base.get("all").doubleValue();
-			System.out.println(delta);
-			System.out.println("Win/Loss: " + win[i] + "/" + loss[i]);
-			//for(int j=0;j<changes[i].length;j++)
-				//System.out.print(changes[i][j] + "\t");
-			//System.out.println("");
-			System.out.println("-----------------------------------------------");
-		}*/
+			String t = (int)(improvementRatioThreshold[i]*100) + "%";
+			if(improvementRatioThreshold[i] > 0)
+				t = "+" + t;
+			tmp[i] = t;
+		}
+		header += "[ < " + tmp[0] + ")\t";
+		for(int i=0;i<improvementRatioThreshold.length-2;i++)
+		{
+			if(i >= indexOfZero)
+				header += "(" + tmp[i] + ", " + tmp[i+1] + "]\t";
+			else
+				header += "[" + tmp[i] + ", " + tmp[i+1] + ")\t";
+		}
+		header += "( > " + tmp[improvementRatioThreshold.length-2] + "]";
+		System.out.println("\t" + header);
+		
+		for(int i=0;i<targets.size();i++)
+		{
+			String msg = FileUtils.getFileName(targetFiles.get(i));
+			for(int j=0;j<rs[i].countByImprovementRange.length;j++)
+				msg += "\t" + rs[i].countByImprovementRange[j];
+			System.out.println(msg);
+		}
 	}
-	
+	/**
+	 * Compare the performance of a set of systems to that of a baseline system
+	 * @param base
+	 * @param targets
+	 * @return
+	 */
+	public Result[] compare(HashMap<String, Double> base, List<HashMap<String, Double>> targets)
+	{
+		//comparative statistics
+		Result[] rs = new Result[targets.size()];
+		for(int i=0;i<targets.size();i++)
+			rs[i] = compare(base, targets.get(i));			
+		return rs;
+	}
+	/**
+	 * Compare the performance of a target system to that of a baseline system
+	 * @param base
+	 * @param target
+	 * @return
+	 */
 	public Result compare(HashMap<String, Double> base, HashMap<String, Double> target)
 	{
 		Result r = new Result();
@@ -152,8 +232,8 @@ public class Analyzer {
 			return r;
 		}
 		
-		r.countByImpRange = new int[improvementRatioThreshold.length];
-		Arrays.fill(r.countByImpRange, 0);
+		r.countByImprovementRange = new int[improvementRatioThreshold.length];
+		Arrays.fill(r.countByImprovementRange, 0);
 		for(String key: base.keySet())
 		{
 			if(!target.containsKey(key))
@@ -170,17 +250,9 @@ public class Analyzer {
 			else if(pt < p)
 				r.loss++;
 			double change = pt - p;
-			if(change != 0)
-				r.countByImpRange[locateSegment(change)]++;
+			if(change != 0)//only interested in cases where <change != 0>
+				r.countByImprovementRange[locateSegment(change)]++;
 		}
 		return r;
-	}
-	public Result[] compare(HashMap<String, Double> base, List<HashMap<String, Double>> targets)
-	{
-		//comparative statistics
-		Result[] rs = new Result[targets.size()];
-		for(int i=0;i<targets.size();i++)
-			rs[i] = compare(base, targets.get(i));			
-		return rs;
 	}
 }

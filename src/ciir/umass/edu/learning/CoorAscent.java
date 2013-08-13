@@ -25,12 +25,12 @@ import ciir.umass.edu.utilities.SimpleMath;
  * @author vdang
  * 
  * This class implements the linear ranking model known as Coordinate Ascent. It was proposed in this paper:
- *  D. Metzler and W.B. Croft. Linear feature-based models for information retrieval. Information Retrieval, 10(3): 257-274, 2000.
+ *  D. Metzler and W.B. Croft. Linear feature-based models for information retrieval. Information Retrieval, 10(3): 257-274, 2007.
  */
 public class CoorAscent extends Ranker {
 
 	//Parameters
-	public static int nRestart = 2;
+	public static int nRestart = 5;
 	public static int nMaxIteration = 25;
 	public static double stepBase = 0.05;
 	public static double stepScale = 2.0;
@@ -180,11 +180,16 @@ public class CoorAscent extends Ranker {
 					break;
 			}
 			//update the (global) best model with the best model found in this round
+			if(validationSamples != null)
+			{
+				current_feature = -1;
+				bestScore = scorer.score(rank(validationSamples));
+			}			
 			if(bestModel == null || bestScore > bestModelScore)
 			{
 				bestModelScore = bestScore;
 				bestModel = bestWeight;
-			}			
+			}
 		}
 		
 		copy(bestModel, weight);

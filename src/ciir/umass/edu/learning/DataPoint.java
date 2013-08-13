@@ -24,7 +24,7 @@ public class DataPoint {
 	
 	public static int featureCount = 0;
 	
-	//atributes
+	//attributes
 	protected float label = 0.0f;//[ground truth] the real label of the data point (e.g. its degree of relevance according to the relevance judgment)
 	protected String id = "";//id of this datapoint (e.g. query-id)
 	protected float[] fVals = null;//fVals[0] is un-used. Feature id MUST start from 1
@@ -40,9 +40,10 @@ public class DataPoint {
 	protected String getValue(String pair)
 	{
 		return pair.substring(pair.lastIndexOf(":")+1);
+	}	
+	protected DataPoint()
+	{		
 	}
-	
-	protected DataPoint(){}
 	public DataPoint(DataPoint dp)
 	{
 		label = dp.label;
@@ -160,7 +161,7 @@ public class DataPoint {
 		return output;
 	}
 	
-	public int getFeatureCount()
+	public static int getFeatureCount()
 	{
 		return featureCount;
 	}

@@ -16,19 +16,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import ciir.umass.edu.eval.Evaluator;
-import ciir.umass.edu.learning.CoorAscent;
 import ciir.umass.edu.learning.DataPoint;
-import ciir.umass.edu.learning.RANKER_TYPE;
 import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.Ranker;
-import ciir.umass.edu.learning.boosting.AdaRank;
-import ciir.umass.edu.learning.boosting.RankBoost;
-import ciir.umass.edu.learning.neuralnet.LambdaRank;
-import ciir.umass.edu.learning.neuralnet.ListNet;
-import ciir.umass.edu.learning.neuralnet.Neuron;
-import ciir.umass.edu.learning.neuralnet.RankNet;
-import ciir.umass.edu.metric.METRIC;
 import ciir.umass.edu.utilities.MyThreadPool;
 import ciir.umass.edu.utilities.SimpleMath;
 import ciir.umass.edu.utilities.MergeSorter;
@@ -62,56 +52,6 @@ public class LambdaMART extends Ranker {
 	protected int[][] sortedIdx = null;//sorted list of samples in @martSamples by each feature -- Need initializing only once 
 	protected FeatureHistogram hist = null;
 	protected float[] pseudoResponses = null;//different for each iteration
-	
-	public static void main(String args[])
-	{
-		MyThreadPool.init(Runtime.getRuntime().availableProcessors());
-		CoorAscent.nRestart = 1;
-		
-		Evaluator ev = new Evaluator(RANKER_TYPE.RANDOM_FOREST, METRIC.MAP, 10, METRIC.NDCG, 1);
-		AdaRank.trainWithEnqueue = false;
-		RankNet.nHiddenLayer = 1;
-		RankNet.nIteration = 300;
-		RankNet.nHiddenNodePerLayer = 5;
-		//RankNet.learningRate = 0.0005;
-		RankNet.learningRate = 0.0001;
-		
-		RankBoost.nIteration = 100;
-		RankBoost.nThreshold = 200;
-		
-		LambdaMART.nThreshold = 2000;
-		RFRanker.nBag = 100;
-		//ev.modelFile = "RandomForest.model";
-		//ev.evaluate("data/toy/train.txt", "data/toy/vali.txt", "data/toy/test.txt", "");
-		
-		//ev.evaluate("data/Fold1/train.txt", "data/Fold1/test.txt", "");
-		//ev.evaluate("data/Fold1/train.txt", "data/Fold1/test.txt", "");
-		//ev.evaluate("data/MQ2008/Fold1/train-vali.txt", "", "data/MQ2008/Fold1/test.txt", "");
-		//ev.evaluate("data/MQ2008/Fold2/train-vali.txt", "", "data/MQ2008/Fold2/test.txt", "");
-		
-		//ev.evaluate("data/MQ2008/Fold1/train.txt", "data/MQ2008/Fold1/vali.txt", "data/MQ2008/Fold1/test.txt", "");
-		//ev.evaluate("data/MQ2008/Fold2/train.txt", "data/MQ2008/Fold2/vali.txt", "data/MQ2008/Fold2/test.txt", "");
-		//ev.evaluate("data/MQ2008/Fold3/train.txt", "data/MQ2008/Fold3/vali.txt", "data/MQ2008/Fold3/test.txt", "");
-		//ev.evaluate("data/MQ2008/Fold4/train.txt", "data/MQ2008/Fold4/vali.txt", "data/MQ2008/Fold4/test.txt", "");
-		//ev.evaluate("data/MQ2008/Fold5/train.txt", "data/MQ2008/Fold5/vali.txt", "data/MQ2008/Fold5/test.txt", "");
-		//ev.evaluate("data/Fold4/train.txt", "data/Fold4/vali.txt", "data/Fold4/test.txt", "");
-		//ev.evaluate("data/Fold5/train.txt", "data/Fold5/vali.txt", "data/Fold5/test.txt", "");
-		
-		//ev.evaluate("data/toy/train.txt", "data/toy/test.txt", "");
-		//ev.evaluate("data/MQ2007/Fold1/train.txt", "data/MQ2007/Fold1/test.txt", "");
-		//ev.evaluate("data/MQ2007/Fold1/train.txt", 0.8, "data/MQ2007/Fold1/test.txt", "");
-		
-		//ev.evaluate("data/MQ2007/Fold1/train.txt", "data/MQ2007/Fold1/vali.txt", "data/MQ2007/Fold1/test.txt", "");
-		ev.evaluate("data/MQ2007/Fold2/train.txt", "data/MQ2007/Fold2/vali.txt", "data/MQ2007/Fold2/test.txt", "");
-		//ev.evaluate("data/MQ2007/Fold3/train.txt", "data/MQ2007/Fold3/vali.txt", "data/MQ2007/Fold3/test.txt", "");
-		//ev.evaluate("data/MQ2007/Fold4/train.txt", "data/MQ2007/Fold4/vali.txt", "data/MQ2007/Fold4/test.txt", "");
-		//ev.evaluate("data/MQ2007/Fold5/train.txt", "data/MQ2007/Fold5/vali.txt", "data/MQ2007/Fold5/test.txt", "");
-		//ev.evaluate("data/MSLR-WEB10K/Fold1/train.txt", "data/MSLR-WEB10K/Fold1/vali.txt", "data/MSLR-WEB10K/Fold1/test.txt", "");
-		
-		//ev.test("RandomForest.model", "data/MQ2008/Fold1/test.txt");
-		//ev.rank("RB.model", "data/MQ2008/Fold1/test.txt");
-		MyThreadPool.getInstance().shutdown();
-	}
 	
 	public LambdaMART()
 	{		
@@ -258,7 +198,7 @@ public class LambdaMART extends Ranker {
 			//update the outputs of the tree (with gamma computed using the Newton-Raphson method) 
 			updateTreeOutput(rt);
 			
-			rt.clearSamples();//clear references to data that is longer used
+			rt.clearSamples();//clear references to data that is no longer used
 			
 			//beg the garbage collector to work...
 			System.gc();
@@ -393,31 +333,27 @@ public class LambdaMART extends Ranker {
 		MyThreadPool p = MyThreadPool.getInstance();
 		if(p.size() == 1)//single-thread
 			computePseudoResponses(0, samples.size()-1, 0);
-		
-		//multi-threading
-		List<LambdaComputationWorker> workers = new ArrayList<LambdaMART.LambdaComputationWorker>();
-		//divide the entire dataset into chunks of equal size for each worker thread
-		int chunk = (samples.size()-1)/p.size() + 1;
-		int current = 0;
-		for(int i=0;i<p.size();i++)
+		else //multi-threading
 		{
-			int start = i*chunk;
-			int end = start + chunk - 1;
-			if(end >= samples.size())
-				end = samples.size()-1;
+			List<LambdaComputationWorker> workers = new ArrayList<LambdaMART.LambdaComputationWorker>();
+			//divide the entire dataset into chunks of equal size for each worker thread
+			int[] partition = p.partition(samples.size());
+			int current = 0;
+			for(int i=0;i<partition.length-1;i++)
+			{
+				//execute the worker
+				LambdaComputationWorker wk = new LambdaComputationWorker(this, partition[i], partition[i+1]-1, current); 
+				workers.add(wk);//keep it so we can get back results from it later on
+				p.execute(wk);
+				
+				if(i < partition.length-2)
+					for(int j=partition[i]; j<=partition[i+1]-1;j++)
+						current += samples.get(j).size();
+			}
 			
-			//execute the worker
-			LambdaComputationWorker wk = new LambdaComputationWorker(this, start, end, current); 
-			workers.add(wk);//keep it so we can get back results from it later on
-			p.execute(wk);
-			
-			if(i < chunk-1)
-				for(int j=start; j<=end;j++)
-					current += samples.get(j).size();
+			//wait for all workers to complete before we move on to the next stage
+			p.await();
 		}
-		
-		//wait for all workers to complete before we move on to the next stage
-		p.await();
 	}
 	protected void computePseudoResponses(int start, int end, int current)
 	{
