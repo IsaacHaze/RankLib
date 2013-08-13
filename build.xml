@@ -42,7 +42,7 @@
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
     <manifest file="MANIFEST.MF">
         <attribute name="Built-By" value="vdang"/>
-        <attribute name="Main-Class" value="ciir.umass.edu.learning.Evaluator"/>
+        <attribute name="Main-Class" value="ciir.umass.edu.eval.Evaluator"/>
         <attribute name="Class-Path" value="${mf.classpath}" />
     </manifest>
     <jar jarfile="${dist}/RankLib.jar" basedir="${build}" manifest="MANIFEST.MF" />
