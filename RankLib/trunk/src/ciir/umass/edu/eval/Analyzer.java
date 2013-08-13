@@ -22,7 +22,7 @@ public class Analyzer {
 
 		String directory = "";
 		String baseline = "";
-		if(args.length != 2)
+		if(args.length < 2)
 		{
 			System.out.println("Usage: java -cp bin/RankLib.jar ciir.umass.edu.eval.Analyzer <Params>");
 			System.out.println("Params:");
