@@ -4,13 +4,13 @@ import java.util.HashMap;
 import java.util.Random;
 
 /**
- * Randomized permutation test
+ * Randomized permutation test. Adapted from Michael Bendersky's Python script.
  * @author vdang
  *
  */
-public class RandomPermutationTest {
-	private int nPermutation = 10000;
+public class RandomPermutationTest extends SignificanceTest {
 	
+	public static int nPermutation = 10000;
 	private static String[] pad = new String[]{"", "0", "00", "000", "0000", "00000", "000000", "0000000", "00000000", "000000000"};
 	
 	/**
@@ -19,7 +19,7 @@ public class RandomPermutationTest {
 	 * @param target
 	 * @return
 	 */
-	public double test(HashMap<String, Double> baseline, HashMap<String, Double> target)
+	public double test(HashMap<String, Double> target, HashMap<String, Double> baseline)
 	{
 		double[] b = new double[baseline.keySet().size()];//baseline
 		double[] t = new double[target.keySet().size()];//target
@@ -56,6 +56,7 @@ public class RandomPermutationTest {
 		}
 		return pvalue/nPermutation;
 	}
+	
 	/**
 	 * Generate a random bit vector of a certain size
 	 * @param size

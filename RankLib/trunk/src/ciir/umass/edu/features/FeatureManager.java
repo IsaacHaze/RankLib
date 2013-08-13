@@ -1,3 +1,12 @@
+/*===============================================================================
+ * Copyright (c) 2010-2012 University of Massachusetts.  All Rights Reserved.
+ *
+ * Use of the RankLib package is subject to the terms of the software license set 
+ * forth in the LICENSE file included with this software, and also available at
+ * http://people.cs.umass.edu/~vdang/ranklib_license.html
+ *===============================================================================
+ */
+
 package ciir.umass.edu.features;
 
 import java.io.BufferedReader;
@@ -30,13 +39,24 @@ public class FeatureManager {
 		
 		if(args.length < 3)
 		{
-			System.out.println("Usage: java -cp bin/RankLib.jar ciir.umass.edu.feature.FeatureManager <Params>");
+			System.out.println("Usage: java -cp bin/RankLib.jar ciir.umass.edu.features.FeatureManager <Params>");
 			System.out.println("Params:");
 			System.out.println("\t-input <file>\t\tSource data (ranked lists)");
-			System.out.println("\t-k <fold>\t\tThe number of folds");
 			System.out.println("\t-output <dir>\t\tThe output directory");
-			System.out.println("\t[ -shuffle] \t\tShuffle the order of the input ranked lists prior to k-fold data generation");
+			
+			System.out.println("");
+			System.out.println("  [+] Shuffling");
+			System.out.println("\t-shuffle\t\tCreate a copy of the input file in which the ordering of all ranked lists (e.g. queries) is randomized.");
+			System.out.println("\t\t\t\t(the order among objects (e.g. documents) within each ranked list is certainly unchanged).");
+			
+			//System.out.println("");
+			System.out.println("  [+] k-fold Partitioning (sequential split)");
+			System.out.println("\t-k <fold>\t\tThe number of folds");
 			System.out.println("\t[ -tvs <x \\in [0..1]> ] Train-validation split ratio (x)(1.0-x)");
+			
+			System.out.println("");
+			System.out.println("  NOTE: If both -shuffle and -k are specified, the input data will be shuffled and then sequentially partitioned.");
+			System.out.println("");
 			return;
 		}
 		
@@ -53,10 +73,53 @@ public class FeatureManager {
 			else if(args[i].compareTo("-output")==0)
 				outputDir = FileUtils.makePathStandard(args[++i]);
 		}		
-		
-		List<RankList> samples = FeatureManager.split(rankingFiles, shuffle, nFold, tvs, outputDir);
-		if(shuffle && rankingFiles.size() > 0)
-			FeatureManager.save(samples, outputDir + rankingFiles.get(0) + ".shuffled");
+	
+		if(shuffle || nFold > 0)
+		{
+			List<RankList> samples = readInput(rankingFiles);
+			if(samples.size() == 0)
+			{
+				System.out.println("Error: The input file is empty.");
+				return;
+			}
+			
+			String fn = FileUtils.getFileName(rankingFiles.get(0));
+			if(shuffle)
+			{
+				fn +=  ".shuffled";
+				System.out.print("Shuffling... ");
+				Collections.shuffle(samples);
+				System.out.println("[Done]");
+				System.out.print("Saving... ");
+				FeatureManager.save(samples, outputDir + fn);
+				System.out.println("[Done]");
+			}
+			if(nFold > 0)
+			{
+				List<List<RankList>> trains = new ArrayList<List<RankList>>();
+				List<List<RankList>> tests = new ArrayList<List<RankList>>();
+				List<List<RankList>> valis = new ArrayList<List<RankList>>();
+				System.out.println("Partitioning... ");
+				prepareCV(samples, nFold, tvs, trains, valis, tests);
+				System.out.println("[Done]");
+				try{
+					for(int i=0;i<trains.size();i++)
+					{
+						System.out.print("Saving fold " + (i+1) + "/" + nFold + "... ");
+						save(trains.get(i), outputDir + "f" + (i+1) + ".train." + fn);
+						save(tests.get(i), outputDir + "f" + (i+1) + ".test." + fn);
+						if(tvs > 0)
+							save(valis.get(i), outputDir + "f" + (i+1) + ".validation." + fn);
+						System.out.println("[Done]");
+					}					
+				}
+				catch(Exception ex)
+				{
+					System.out.println("Error: Cannot save partition data.");				
+					System.out.println("Occured in FeatureManager::main(): " + ex.toString());
+				}
+			}
+		}
 	}
 	
 	/**
@@ -147,7 +210,7 @@ public class FeatureManager {
 		return samples;
 	}
 	/**
-	 * Read features specified in an input feature file. 
+	 * Read features specified in an input feature file. Expecting one feature per line. 
 	 * @param featureDefFile
 	 * @return
 	 */
@@ -180,88 +243,9 @@ public class FeatureManager {
 		return features;
 	}
 	/**
-	 * Generate k-fold training and test data from a single input sample file.
-	 * @param rankingFile
-	 * @param shuffle Whether to shuffle the order of the ranked list before splitting
-	 * @param nFold
-	 * @param outputDir
-	 * @return The input ranking (might be shuffled if shuffle=true) for k-fold data generation.
-	 */
-	public static List<RankList> split(String rankingFile, boolean shuffle, int nFold, String outputDir)
-	{
-		return split(rankingFile, shuffle, nFold, -1, outputDir);
-	}
-	/**
-	 * Generate k-fold training, validation and test data from a single input sample file.
-	 * @param rankingFile
-	 * @param shuffle Whether to shuffle the order of the ranked list before splitting
-	 * @param nFold
-	 * @param tvs Train/validation split ratio
-	 * @param outputDir
-	 * @return The input ranking (might be shuffled if shuffle=true) for k-fold data generation.
-	 */
-	public static List<RankList> split(String rankingFile, boolean shuffle, int nFold, float tvs, String outputDir)
-	{
-		List<String> l = new ArrayList<String>();
-		l.add(rankingFile);
-		return split(l, shuffle, nFold, tvs, outputDir);		
-	}
-	/**
-	 * Generate k-fold training and test data from multiple input files. All input ranked lists are merged into one 
-	 * before the k-fold data generation begins.
-	 * @param rankingFiles
-	 * @param shuffle Whether to shuffle the order of the ranked list before splitting
-	 * @param nFold
-	 * @param outputDir
-	 * @return The merged input ranking (might be shuffled if shuffle=true) for k-fold data generation.
-	 */
-	public static List<RankList> split(List<String> rankingFiles, boolean shuffle, int nFold, String outputDir)
-	{
-		return split(rankingFiles, shuffle, nFold, -1, outputDir);
-	}
-	/**
-	 * Generate k-fold training, validation and test data from multiple input files. All input ranked lists are merged into one 
-	 * before the k-fold data generation begins.
-	 * @param rankingFiles
-	 * @param shuffle Whether to shuffle the order of the ranked list before splitting
-	 * @param nFold
-	 * @param tvs Train/validation split ratio
-	 * @param outputDir
-	 * @return The merged input ranking (might be shuffled if shuffle=true) for k-fold data generation.
-	 */
-	public static List<RankList> split(List<String> rankingFiles, boolean shuffle, int nFold, float tvs, String outputDir)
-	{
-		outputDir = FileUtils.makePathStandard(outputDir);
-		List<RankList> samples = readInput(rankingFiles);
-		if(shuffle)
-			Collections.shuffle(samples);
-		
-		String outputFN = FileUtils.getFileName(rankingFiles.get(0));
-		List<List<RankList>> trains = new ArrayList<List<RankList>>();
-		List<List<RankList>> tests = new ArrayList<List<RankList>>();
-		List<List<RankList>> valis = new ArrayList<List<RankList>>();
-		prepareCV(samples, nFold, tvs, trains, valis, tests);
-		try{
-			System.out.print("Saving... ");
-			for(int i=0;i<trains.size();i++)
-			{
-				save(trains.get(i), outputDir + "f" + (i+1) + ".train." + outputFN);
-				save(tests.get(i), outputDir + "f" + (i+1) + ".test." + outputFN);
-				if(tvs > 0)
-					save(valis.get(i), outputDir + "f" + (i+1) + ".validation." + outputFN);
-			}
-			System.out.println("[Done]");
-		}
-		catch(Exception ex)
-		{
-			System.out.println("Error in FeatureManager::split(): " + ex.toString());
-			System.exit(1);
-		}
-		return samples;
-	}
-	
-	/**
 	 * Obtain all features present in a sample set. 
+	 * Important: If your data (DataPoint objects) is loaded by RankLib (e.g. command-line use) or its APIs, there is nothing to watch out for.
+	 *            If you create the DataPoint objects yourself, make sure DataPoint.featureCount correctly reflects the total number features present in your dataset.
 	 * @param samples
 	 * @return
 	 */
@@ -272,11 +256,10 @@ public class FeatureManager {
 			System.out.println("Error in FeatureManager::getFeatureFromSampleVector(): There are no training samples.");
 			System.exit(1);
 		}
-		DataPoint dp = samples.get(0).get(0);
-		int fc = dp.getFeatureCount();
+		int fc = DataPoint.getFeatureCount();
 		int[] features = new int[fc];
-		for(int i=0;i<fc;i++)
-			features[i] = i+1;
+		for(int i=1;i<=fc;i++)
+			features[i-1] = i;
 		return features;
 	}
 	/**
@@ -384,6 +367,22 @@ public class FeatureManager {
 		}
 		System.out.println("\rCreating data for " + nFold + " folds... [Done]            ");
 	}
+	/**
+	 * Split the input sample set into 2 chunks: one for training and one for either validation or testing
+	 * @param sampleFile
+	 * @param featureDefFile
+	 * @param percentTrain The percentage of data used for training
+	 * @param trainingData
+	 * @param testData
+	 */
+	public static void prepareSplit(List<RankList> samples, double percentTrain, List<RankList> trainingData, List<RankList> testData)
+	{
+		int size = (int) (samples.size() * percentTrain);
+		for(int i=0; i<size; i++)
+			trainingData.add(new RankList(samples.get(i)));
+		for(int i=size; i<samples.size(); i++)
+			testData.add(new RankList(samples.get(i)));
+	}	
 	/**
 	 * Save a sample set to file
 	 * @param samples

@@ -1,8 +1,27 @@
-Date:		July, 2012.
-Version:	2.1
+Date:		August, 2013.
+Version:	2.2
 ======================================
 
 WHAT'S NEW
+- Proper support for k-fold cross-validation (cv models can now be... saved!!! support random partitions in addition to sequential partitions)
+- Help compare different models (i.e. how much gain? win/loss? statistically significant? improvement/hurt analysis).
+- Add "linear" (Min/Max) feature normalization. ( q->D={d1,d2,...,d_n}; F={f1,f2,...,fm}; fk_di = (fk_di - min_fk_all_d_in_D) / (max_fk_all_d_in_D - min_fk_all_d_in_D) ).
+- Coordinate Ascent now takes into account validation data just like all other algorithms (though Coordinate Ascent usually works well without validation data)
+- Default value for #nRestart (Coordinate Ascent) is changed to 5 (increasing it might give better results, but training will take longer)
+- [Bugfix] Feature normalization: RankLib sometimes doesn't do normalization even when it is told to do so.
+- [Bugfix] Certain combinations of #features/#samples and #cpu-cores screwed up my multi-threaded implementatin of LambdaMART, causing the algorithm to underperform.
+- [Bugfix] LambdaMART's occasional crashes.
+- [Bugfix] RankLib crashes if the comment text associated with each feature vector contains additional "#" (other than the "#" used to specify a comment)
+- Internal class/package re-arrangement (expect minor code change if you're using RankLib codes programatically)
+
+(personal reminder)
+- [Beta] Sparse feature vector: work properly, but its benefit has NOT been evaluated (slow down vs. memory gain? -- might be useless at the moment!)
+- [Beta] Added L2 linear regression (NOT yet tested).
+
+
+========================
+v 2.1
+------
 - Add ListNet.
 - Add Random Forest.
 - With little manual work, it can do BagBoo/Bagging LambaMART too.

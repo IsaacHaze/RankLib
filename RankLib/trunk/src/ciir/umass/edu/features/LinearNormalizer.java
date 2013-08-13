@@ -1,3 +1,12 @@
+/*===============================================================================
+ * Copyright (c) 2010-2012 University of Massachusetts.  All Rights Reserved.
+ *
+ * Use of the RankLib package is subject to the terms of the software license set 
+ * forth in the LICENSE file included with this software, and also available at
+ * http://people.cs.umass.edu/~vdang/ranklib_license.html
+ *===============================================================================
+ */
+
 package ciir.umass.edu.features;
 
 import java.util.Arrays;
@@ -17,10 +26,10 @@ public class LinearNormalizer extends Normalizer {
 			System.out.println("Error in LinearNormalizor::normalize(): The input ranked list is empty");
 			System.exit(1);
 		}
-		int nFeature = rl.get(0).getFeatureCount();
+		int nFeature = DataPoint.getFeatureCount();
         int[] fids = new int[nFeature];
         for(int i=1;i<=nFeature;i++)
-        	fids[i] = i;
+        	fids[i-1] = i;
         normalize(rl, fids);
     }
 	@Override
@@ -50,8 +59,13 @@ public class LinearNormalizer extends Normalizer {
             DataPoint dp = rl.get(i);
             for(int j=0;j<fids.length;j++)
             {
-                float value = (dp.getFeatureValue(fids[j]) - min[j]) / (max[j] - min[j]);
-                dp.setFeatureValue(fids[j], value);
+            	if(max[j] != min[j])
+            	{
+	                float value = (dp.getFeatureValue(fids[j]) - min[j]) / (max[j] - min[j]);
+	                dp.setFeatureValue(fids[j], value);
+            	}
+            	else
+            		dp.setFeatureValue(fids[j], 0);
             }
         }
     }

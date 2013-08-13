@@ -63,16 +63,12 @@ public class MyThreadPool extends ThreadPoolExecutor {
 	}
 	public int[] partition(int listSize)
 	{
-		int chunk = (listSize-1)/size + 1;
+		int chunkSize = listSize/size;
+		int mod = listSize % size;
 		int[] partition = new int[size+1];
 		partition[0] = 0;
-		for(int i=0;i<size;i++)
-		{
-			int end = (i+1)*chunk;
-			if(end > listSize)
-				end = listSize;
-			partition[i+1] = end;
-		}
+		for(int i=1;i<=size;i++)
+			partition[i] = partition[i-1] + chunkSize + ((i<=mod)?1:0);
 		return partition;
 	}
 	

@@ -25,7 +25,7 @@ public class SumNormalizor extends Normalizer {
 			System.out.println("Error in SumNormalizor::normalize(): The input ranked list is empty");
 			System.exit(1);
 		}
-		int nFeature = rl.get(0).getFeatureCount();
+		int nFeature = DataPoint.getFeatureCount();
 		float[] norm = new float[nFeature];
 		Arrays.fill(norm, 0);
 		for(int i=0;i<rl.size();i++)
@@ -38,7 +38,10 @@ public class SumNormalizor extends Normalizer {
 		{
 			DataPoint dp = rl.get(i);
 			for(int j=1;j<=nFeature;j++)
-				dp.setFeatureValue(j, dp.getFeatureValue(j)/norm[j-1]);
+			{
+				if(norm[j-1] > 0)
+					dp.setFeatureValue(j, dp.getFeatureValue(j)/norm[j-1]);
+			}
 		}
 	}
 	@Override
@@ -60,7 +63,8 @@ public class SumNormalizor extends Normalizer {
 		{
 			DataPoint dp = rl.get(i);
 			for(int j=0;j<fids.length;j++)
-				dp.setFeatureValue(fids[j], dp.getFeatureValue(fids[j])/norm[j]);
+				if(norm[j] > 0)
+					dp.setFeatureValue(fids[j], dp.getFeatureValue(fids[j])/norm[j]);
 		}
 	}
 	public String name()
