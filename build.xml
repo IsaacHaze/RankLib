@@ -45,7 +45,7 @@
         <attribute name="Main-Class" value="ciir.umass.edu.eval.Evaluator"/>
         <attribute name="Class-Path" value="${mf.classpath}" />
     </manifest>
-    <jar jarfile="${dist}/RankLib.jar" basedir="${build}" manifest="MANIFEST.MF" />
+    <jar jarfile="${dist}/RankLib-2.2.jar" basedir="${build}" manifest="MANIFEST.MF" />
   </target>
 
   <!--copy todir="${dist.lib}">
