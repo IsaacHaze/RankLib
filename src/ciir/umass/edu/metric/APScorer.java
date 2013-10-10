@@ -154,7 +154,7 @@ public class APScorer extends MetricScorer {
 					change += ((double)((relCount[i]+diff)*labels[j] - relCount[i]*labels[i])) / (i+1);
 					for(int k=i+1;k<=j-1;k++)
 						if(labels[k] > 0)
-							change += ((double)(relCount[k]+diff)) / (k+1);
+							change += ((double)+diff) / (k+1);
 					change += ((double)(-relCount[j]*diff)) / (j+1);
 					//It is equivalent to:  change += ((double)(relCount[j]*labels[i] - relCount[j]*labels[j])) / (j+1);
 				}
