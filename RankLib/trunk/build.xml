@@ -27,6 +27,8 @@
     <!-- Compile the java code from ${src} into ${build} -->
     <javac srcdir="${src}" 
 	    destdir="${build}">
+	   <exclude name="ciir/umass/edu/tuning/*.java"/>
+	   <exclude name="test/*.java"/>
            <classpath refid="compile.classpath"/>
     </javac>
   </target>

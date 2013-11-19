@@ -1,5 +1,5 @@
 Date:		November, 2013.
-Version:	2.2+
+Version:	2.2.1
 ======================================
 
 WHAT'S NEW
