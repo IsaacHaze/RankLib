@@ -1,8 +1,20 @@
-Date:		August, 2013.
-Version:	2.2
+Date:		November, 2013.
+Version:	2.2+
 ======================================
 
 WHAT'S NEW
+- [bugfix] Normalization issue with RankBoost (the command "-test <test-data> -load <RB-model-file> -norm zscore/sum" incorrectly normalizes the test data).
+- [bugfix] Reciprocal rank is always measured off the entire ranked list, regardless of the specified cut-off point.
+- [bugfix] MAP change when swaping two documents in a ranked list is incorrect. This only affects LambdaMART trained with MAP. It doesn't seem to have any significant impact on model effectiveness though.
+- Slight efficiency improvement.
+- RankLib can now be used to evaluate models trained using other LTR software packages (e.g. SVM-Rank)
+- [in progress] Create ranker from external jar files (reflection)
+
+TO-DO: incorporate Siddhartha Bagaria's patch for improving support for sparse dataset .
+
+========================
+v 2.2
+------
 - Proper support for k-fold cross-validation (cv models can now be... saved!!! support random partitions in addition to sequential partitions)
 - Help compare different models (i.e. how much gain? win/loss? statistically significant? improvement/hurt analysis).
 - Add "linear" (Min/Max) feature normalization. ( q->D={d1,d2,...,d_n}; F={f1,f2,...,fm}; fk_di = (fk_di - min_fk_all_d_in_D) / (max_fk_all_d_in_D - min_fk_all_d_in_D) ).

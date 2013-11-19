@@ -13,12 +13,12 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
 
 import ciir.umass.edu.learning.DataPoint;
 import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.Ranker;
+import ciir.umass.edu.metric.MetricScorer;
 import ciir.umass.edu.utilities.MergeSorter;
 import ciir.umass.edu.utilities.SimpleMath;
 
@@ -38,7 +38,6 @@ public class RankBoost extends Ranker {
 	protected List<List<int[]>> sortedSamples = new ArrayList<List<int[]>>();
 	protected double[][] thresholds = null;//candidate values for weak rankers' threshold, selected from feature values
 	protected int[][] tSortedIdx = null;//sorted (descend) index for @thresholds
-	protected Hashtable<Integer, Integer> usedFeatures = new Hashtable<Integer, Integer>();
 	
 	protected List<RBWeakRanker> wRankers = null;//best weak rankers at each round
 	protected List<Double> rWeight = null;//alpha (weak rankers' weight)
@@ -55,9 +54,9 @@ public class RankBoost extends Ranker {
 	{
 		
 	}
-	public RankBoost(List<RankList> samples, int[] features)
+	public RankBoost(List<RankList> samples, int[] features, MetricScorer scorer)
 	{
-		super(samples, features);
+		super(samples, features, scorer);
 	}
 	
 	private int[] reorder(RankList rl, int fid)

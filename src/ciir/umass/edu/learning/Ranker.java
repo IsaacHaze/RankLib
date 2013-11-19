@@ -35,37 +35,37 @@ public class Ranker {
 	protected double bestScoreOnValidationData = 0.0;
 	
 	protected List<RankList> validationSamples = null;
-	protected List<RankList> testSamples = null;
 	
-	public Ranker()
+	protected Ranker()
 	{
 		
-	}
-	
-	public Ranker(List<RankList> samples, int[] features)
+	}	
+	protected Ranker(List<RankList> samples, int[] features, MetricScorer scorer)
 	{
 		this.samples = samples;
 		this.features = features;
+		this.scorer = scorer;
 	}
 	
 	//Utility functions
-	public void set(List<RankList> samples, int[] features)
+	public void setTrainingSet(List<RankList> samples)
 	{
 		this.samples = samples;
-		this.features = features;
+	
+	}
+	public void setFeatures(int[] features)
+	{
+		this.features = features;	
 	}
 	public void setValidationSet(List<RankList> samples)
 	{
 		this.validationSamples = samples;
 	}
-	public void setTestSet(List<RankList> samples)
-	{
-		this.testSamples = samples;
-	}
-	public void set(MetricScorer scorer)
+	public void setMetricScorer(MetricScorer scorer)
 	{
 		this.scorer = scorer;
 	}
+	
 	public double getScoreOnTrainingData()
 	{
 		return scoreOnTrainingData;
@@ -99,17 +99,17 @@ public class Ranker {
 		FileUtils.write(modelFile, "ASCII", model());
 	}
 	
-	public void PRINT(String msg)
+	protected void PRINT(String msg)
 	{
 		if(verbose)
 			System.out.print(msg);
 	}
-	public void PRINTLN(String msg)
+	protected void PRINTLN(String msg)
 	{
 		if(verbose)
 			System.out.println(msg);
 	}
-	public void PRINT(int[] len, String[] msgs)
+	protected void PRINT(int[] len, String[] msgs)
 	{
 		if(verbose)
 		{
@@ -125,18 +125,18 @@ public class Ranker {
 			}
 		}
 	}
-	public void PRINTLN(int[] len, String[] msgs)
+	protected void PRINTLN(int[] len, String[] msgs)
 	{
 		PRINT(len, msgs);
 		PRINTLN("");
 	}
-	public void PRINTTIME()
+	protected void PRINTTIME()
 	{
 		DateFormat dateFormat = new SimpleDateFormat("MM/dd HH:mm:ss");
 		Date date = new Date();
 		System.out.println(dateFormat.format(date));
 	}
-	public void PRINT_MEMORY_USAGE()
+	protected void PRINT_MEMORY_USAGE()
 	{
 		System.out.println("***** " + Runtime.getRuntime().freeMemory() + " / " + Runtime.getRuntime().maxMemory());
 	}
@@ -146,6 +146,7 @@ public class Ranker {
 		for(int j=0;j<source.length;j++)
 			target[j] = source[j];
 	}
+	
 	/**
 	 * HAVE TO BE OVER-RIDDEN IN SUB-CLASSES
 	 */
@@ -165,7 +166,7 @@ public class Ranker {
 	}
 	public String toString()
 	{
-		return "[Not yet implemented]";
+		return "";
 	}
 	public String model()
 	{

@@ -9,6 +9,7 @@
 
 package ciir.umass.edu.features;
 
+import java.util.HashSet;
 import java.util.List;
 
 import ciir.umass.edu.learning.RankList;
@@ -36,6 +37,18 @@ public class Normalizer {
 	{
 		for(int i=0;i<samples.size();i++)
 			normalize(samples.get(i), fids);
+	}
+	public int[] removeDuplicateFeatures(int[] fids)
+	{
+		HashSet<Integer> uniqueSet = new HashSet<Integer>();
+		for(int i=0;i<fids.length;i++)
+			if(!uniqueSet.contains(fids[i]))
+				uniqueSet.add(fids[i]);
+		fids = new int[uniqueSet.size()];
+		int fi=0;
+		for(Integer i : uniqueSet)
+			fids[fi++] = i.intValue();
+		return fids;
 	}
 	public String name()
 	{

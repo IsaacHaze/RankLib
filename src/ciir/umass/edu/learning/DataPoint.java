@@ -76,6 +76,11 @@ public class DataPoint {
 			}
 			String[] fs = text.split(" ");
 			label = Float.parseFloat(fs[0]);
+			if(label < 0)
+			{
+				System.out.println("Relevance label cannot be negative. System will now exit.");
+				System.exit(1);
+			}
 			id = getValue(fs[1]);
 			String key = "";
 			String val = "";
@@ -151,15 +156,6 @@ public class DataPoint {
 	{
 		cached = -100000000.0f;;
 	}
-	public String toString()
-	{
-		String output = label + " " + "id:" + id + " ";
-		for(int i=1;i<fVals.length;i++)
-			if(fVals[i] != UNKNOWN)
-				output += i + ":" + fVals[i] + ((i==fVals.length-1)?"":" ");
-		output += " " + description;
-		return output;
-	}
 	
 	public static int getFeatureCount()
 	{
@@ -188,4 +184,21 @@ public class DataPoint {
 		}
 		fVals[fid] = fval;
 	}	
+	public String toString()
+	{
+		String output = ((int)label) + " " + "qid:" + id + " ";
+		for(int i=1;i<fVals.length;i++)
+			if(fVals[i] != UNKNOWN)
+				output += i + ":" + fVals[i] + ((i==fVals.length-1)?"":" ");
+		output += " " + description;
+		return output;
+	}
+	public void setFeatureVector(float[] fVals)
+	{
+		this.fVals = fVals;
+	}
+	public float[] getFeatureVector()
+	{
+		return fVals;
+	}
 }

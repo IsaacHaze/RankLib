@@ -9,7 +9,7 @@
 
 package ciir.umass.edu.metric;
 
-import java.util.Hashtable;
+import java.util.HashMap;
 
 /**
  * @author vdang
@@ -17,7 +17,7 @@ import java.util.Hashtable;
 public class MetricScorerFactory {
 
 	private static MetricScorer[] mFactory = new MetricScorer[]{new APScorer(), new NDCGScorer(), new DCGScorer(), new PrecisionScorer(), new ReciprocalRankScorer(), new BestAtKScorer(), new ERRScorer()};
-	private static Hashtable<String, MetricScorer> map = new Hashtable<String, MetricScorer>();
+	private static HashMap<String, MetricScorer> map = new HashMap<String, MetricScorer>();
 	
 	public MetricScorerFactory()
 	{

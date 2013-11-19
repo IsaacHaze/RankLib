@@ -149,7 +149,7 @@ public class FeatureManager {
 			
 			String lastID = "";
 			boolean hasRel = false;
-			RankList rl = new RankList();
+			List<DataPoint> rl = new ArrayList<DataPoint>();
 			while((content = in.readLine()) != null)
 			{
 				content = content.trim();
@@ -170,8 +170,8 @@ public class FeatureManager {
 				if(lastID.compareTo("")!=0 && lastID.compareTo(qp.getID())!=0)
 				{
 					if(!mustHaveRelDoc || hasRel)
-						samples.add(rl);
-					rl = new RankList();
+						samples.add(new RankList(rl));
+					rl = new ArrayList<DataPoint>();
 					hasRel = false;
 				}
 				
@@ -182,7 +182,7 @@ public class FeatureManager {
 				countEntries++;
 			}
 			if(rl.size() > 0 && (!mustHaveRelDoc || hasRel))
-				samples.add(rl);
+				samples.add(new RankList(rl));
 			in.close();
 			System.out.println("\rReading feature file [" + inputFile + "]... [Done.]            ");
 			System.out.println("(" + samples.size() + " ranked lists, " + countEntries + " entries read)");
@@ -288,13 +288,13 @@ public class FeatureManager {
 	 */
 	public static void prepareCV(List<RankList> samples, int nFold, float tvs, List<List<RankList>> trainingData, List<List<RankList>> validationData, List<List<RankList>> testData)
 	{
-		/*int[][] folds = new int[][]{
-				{102, 106, 124, 134, 159, 160, 116, 139, 133},
-				{107, 117, 168, 121, 120, 123, 114, 146, 138},
-				{110, 149, 158, 118, 167, 103, 108, 164},
-				{122, 136, 111, 151, 155, 104, 119, 170},
-				{154, 162, 153, 115, 112, 157, 113, 109}
-		};
+		/*int[][] testQueries  = new int[][]{
+			{67, 125, 78, 96, 174, 112, 62, 92, 19, 181, 89, 126, 104, 111, 41, 170, 131, 59, 162, 83, 58, 70, 161, 4, 184, 80, 109, 132, 168, 49, 197, 50, 176, 200, 53, 103, 199, 25, 94, 66},
+			{13, 124, 55, 180, 65, 105, 31, 24, 163, 123, 33, 159, 101, 36, 149, 127, 142, 22, 143, 7, 68, 69, 15, 147, 57, 196, 23, 77, 1, 2, 106, 5, 64, 137, 14, 86, 73, 183, 114, 18},
+			{54, 63, 9, 17, 182, 44, 29, 186, 128, 99, 135, 167, 139, 133, 146, 82, 34, 141, 154, 194, 16, 140, 26, 75, 190, 173, 93, 179, 6, 11, 28, 38, 189, 193, 51, 171, 40, 3, 90, 20},
+			{178, 98, 130, 37, 172, 165, 85, 122, 115, 117, 153, 46, 30, 152, 138, 79, 81, 95, 91, 187, 100, 110, 56, 169, 175, 157, 87, 160, 43, 47, 88, 27, 155, 195, 129, 45, 21, 145, 8, 121},
+			{116, 166, 32, 60, 61, 52, 118, 177, 72, 156, 76, 108, 151, 71, 35, 150, 113, 164, 107, 134, 48, 10, 12, 84, 188, 39, 158, 191, 102, 74, 185, 136, 119, 42, 97, 198, 192, 148, 144, 120}
+			 };
 		
 		List<List<Integer>> trainSamplesIdx = new ArrayList<List<Integer>>();
 		for(int f=0;f<nFold;f++)
@@ -304,10 +304,10 @@ public class FeatureManager {
 		{
 			int qid = Integer.parseInt(samples.get(i).getID());
 			int f = -1;
-			for(int j=0;j<folds.length&&f==-1;j++)
+			for(int j=0;j<testQueries.length&&f==-1;j++)
 			{
-				for(int k=0;k<folds[j].length&&f==-1;k++)
-					if(qid == folds[j][k])
+				for(int k=0;k<testQueries[j].length&&f==-1;k++)
+					if(qid == testQueries[j][k])
 						f = j;
 			}
 			if(f==-1)

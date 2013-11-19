@@ -13,7 +13,7 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
-import java.util.Hashtable;
+import java.util.HashMap;
 
 import ciir.umass.edu.learning.RankList;
 
@@ -25,7 +25,7 @@ public class APScorer extends MetricScorer {
 	//This class computes MAP from the *WHOLE* ranked list. "K" will be completely ignored.
 	//The reason is, if you want MAP@10, you really should be using NDCG@10 or ERR@10 instead.
 	
-	public Hashtable<String, Integer> relDocCount = null;
+	public HashMap<String, Integer> relDocCount = null;
 	
 	public APScorer()
 	{
@@ -37,7 +37,7 @@ public class APScorer extends MetricScorer {
 	}
 	public void loadExternalRelevanceJudgment(String qrelFile)
 	{
-		relDocCount = new Hashtable<String, Integer>();
+		relDocCount = new HashMap<String, Integer>();
 		try {
 			String content = "";
 			BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(qrelFile)));
@@ -132,7 +132,7 @@ public class APScorer extends MetricScorer {
 		}
 		else
 			rdCount = count;
-			
+
 		double[][] changes = new double[rl.size()][];
 		for(int i=0;i<rl.size();i++)
 		{
@@ -154,7 +154,7 @@ public class APScorer extends MetricScorer {
 					change += ((double)((relCount[i]+diff)*labels[j] - relCount[i]*labels[i])) / (i+1);
 					for(int k=i+1;k<=j-1;k++)
 						if(labels[k] > 0)
-							change += ((double)+diff) / (k+1);
+							change += ((double)diff) / (k+1);
 					change += ((double)(-relCount[j]*diff)) / (j+1);
 					//It is equivalent to:  change += ((double)(relCount[j]*labels[i] - relCount[j]*labels[j])) / (j+1);
 				}

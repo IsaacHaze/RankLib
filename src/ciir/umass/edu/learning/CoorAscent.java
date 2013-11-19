@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 
 import ciir.umass.edu.learning.RankList;
+import ciir.umass.edu.metric.MetricScorer;
 import ciir.umass.edu.utilities.KeyValuePair;
 import ciir.umass.edu.utilities.MergeSorter;
 import ciir.umass.edu.utilities.SimpleMath;
@@ -48,9 +49,9 @@ public class CoorAscent extends Ranker {
 	{
 		
 	}
-	public CoorAscent(List<RankList> samples, int[] features)
+	public CoorAscent(List<RankList> samples, int[] features, MetricScorer scorer)
 	{
-		super(samples, features);
+		super(samples, features, scorer);
 	}
 	
 	public void init()
