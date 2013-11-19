@@ -41,6 +41,9 @@ public class LinearNormalizer extends Normalizer {
 			System.exit(1);
 		}
 		
+		//remove duplicate features from the input @fids ==> avoid normalizing the same features multiple times
+		fids = removeDuplicateFeatures(fids);
+				
         float[] min = new float[fids.length];
         float[] max = new float[fids.length];
         Arrays.fill(min, 0);
@@ -59,7 +62,7 @@ public class LinearNormalizer extends Normalizer {
             DataPoint dp = rl.get(i);
             for(int j=0;j<fids.length;j++)
             {
-            	if(max[j] != min[j])
+            	if(max[j] > min[j])
             	{
 	                float value = (dp.getFeatureValue(fids[j]) - min[j]) / (max[j] - min[j]);
 	                dp.setFeatureValue(fids[j], value);

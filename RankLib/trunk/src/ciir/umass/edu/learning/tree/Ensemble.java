@@ -11,6 +11,7 @@ package ciir.umass.edu.learning.tree;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -28,6 +29,7 @@ import ciir.umass.edu.learning.DataPoint;
 public class Ensemble {
 	protected List<RegressionTree> trees = null;
 	protected List<Float> weights = null;
+	protected int[] features = null;
 	
 	public Ensemble()
 	{
@@ -52,23 +54,28 @@ public class Ensemble {
 			ByteArrayInputStream in = new ByteArrayInputStream(xmlDATA);
 			Document doc = dBuilder.parse(in);
 			NodeList nl = doc.getElementsByTagName("tree");
+			HashMap<Integer, Integer> fids = new HashMap<Integer, Integer>();
 			for(int i=0;i<nl.getLength();i++)
 			{
 				Node n = nl.item(i);//each node corresponds to a "tree" (tag)
 				//create a regression tree from this node
-				Split root = create(n.getFirstChild());
+				Split root = create(n.getFirstChild(), fids);
 				//get the weight for this tree
 				float weight = Float.parseFloat(n.getAttributes().getNamedItem("weight").getNodeValue().toString());
 				//add it to the ensemble
 				trees.add(new RegressionTree(root));
 				weights.add(weight);
 			}
+			features = new int[fids.keySet().size()];
+			int i = 0;
+			for(Integer fid : fids.keySet())
+				features[i++] = fid;
 		}
 		catch(Exception ex)
 		{
 			System.out.println("Error in Emsemble(xmlRepresentation): " + ex.toString());
+			System.exit(1);
 		}
-
 	}
 	
 	public void add(RegressionTree tree, float weight)
@@ -126,23 +133,28 @@ public class Ensemble {
 		strRep += "</ensemble>" + "\n";
 		return strRep;
 	}
+	public int[] getFeatures()
+	{
+		return features;
+	}
 	
 	/**
 	 * Each input node @n corersponds to a <split> tag in the model file.
 	 * @param n
 	 * @return
 	 */
-	private Split create(Node n)
+	private Split create(Node n, HashMap<Integer, Integer> fids)
 	{
 		Split s = null;
 		if(n.getFirstChild().getNodeName().compareToIgnoreCase("feature") == 0)//this is a split
 		{
 			NodeList nl = n.getChildNodes();
 			int fid = Integer.parseInt(nl.item(0).getFirstChild().getNodeValue().toString().trim());//<feature>
+			fids.put(fid, 0);
 			float threshold = Float.parseFloat(nl.item(1).getFirstChild().getNodeValue().toString().trim());//<threshold>
 			s = new Split(fid, threshold, 0);
-			s.setLeft(create(nl.item(2)));
-			s.setRight(create(nl.item(3)));
+			s.setLeft(create(nl.item(2), fids));
+			s.setRight(create(nl.item(3), fids));
 		}
 		else//this is a stump
 		{

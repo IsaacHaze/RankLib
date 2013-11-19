@@ -12,7 +12,7 @@ package ciir.umass.edu.learning;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.List;
 
 import ciir.umass.edu.learning.boosting.AdaRank;
@@ -23,6 +23,7 @@ import ciir.umass.edu.learning.neuralnet.RankNet;
 import ciir.umass.edu.learning.tree.MART;
 import ciir.umass.edu.learning.tree.LambdaMART;
 import ciir.umass.edu.learning.tree.RFRanker;
+import ciir.umass.edu.metric.MetricScorer;
 
 /**
  * @author vdang
@@ -32,7 +33,7 @@ import ciir.umass.edu.learning.tree.RFRanker;
 public class RankerFactory {
 
 	protected Ranker[] rFactory = new Ranker[]{new MART(), new RankBoost(), new RankNet(), new AdaRank(), new CoorAscent(), new LambdaRank(), new LambdaMART(), new ListNet(), new RFRanker(), new LinearRegRank()};
-	protected static Hashtable<String, RANKER_TYPE> map = new Hashtable<String, RANKER_TYPE>();
+	protected static HashMap<String, RANKER_TYPE> map = new HashMap<String, RANKER_TYPE>();
 	
 	public RankerFactory()
 	{
@@ -52,10 +53,45 @@ public class RankerFactory {
 		Ranker r = rFactory[type.ordinal() - RANKER_TYPE.MART.ordinal()].clone();
 		return r;
 	}
-	public Ranker createRanker(RANKER_TYPE type, List<RankList> samples, int[] features)
+	public Ranker createRanker(RANKER_TYPE type, List<RankList> samples, int[] features, MetricScorer scorer)
 	{
 		Ranker r = createRanker(type);
-		r.set(samples, features);
+		r.setTrainingSet(samples);
+		r.setFeatures(features);
+		r.setMetricScorer(scorer);
+		return r;
+	}
+	@SuppressWarnings("unchecked")
+	public Ranker createRanker(String className)
+	{
+		Ranker r = null;
+		try {
+			Class c = Class.forName(className);
+			r = (Ranker) c.newInstance();
+		}
+		catch (ClassNotFoundException e) {
+			System.out.println("Could find the class \"" + className + "\" you specified. Make sure the jar library is in your classpath.");
+			e.printStackTrace();
+			System.exit(1);
+		}
+		catch (InstantiationException e) {
+			System.out.println("Cannot create objects from the class \"" + className + "\" you specified.");
+			e.printStackTrace();
+			System.exit(1);
+		}
+		catch (IllegalAccessException e) {
+			System.out.println("The class \"" + className + "\" does not implement the Ranker interface.");
+			e.printStackTrace();
+			System.exit(1);
+		}
+		return r;
+	}
+	public Ranker createRanker(String className, List<RankList> samples, int[] features, MetricScorer scorer)
+	{
+		Ranker r = createRanker(className);
+		r.setTrainingSet(samples);
+		r.setFeatures(features);
+		r.setMetricScorer(scorer);
 		return r;
 	}
 	public Ranker loadRanker(String modelFile)

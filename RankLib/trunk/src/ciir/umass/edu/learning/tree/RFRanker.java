@@ -13,6 +13,7 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import ciir.umass.edu.learning.DataPoint;
@@ -21,6 +22,7 @@ import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.Ranker;
 import ciir.umass.edu.learning.RankerFactory;
 import ciir.umass.edu.learning.Sampler;
+import ciir.umass.edu.metric.MetricScorer;
 import ciir.umass.edu.utilities.SimpleMath;
 
 public class RFRanker extends Ranker {
@@ -43,9 +45,9 @@ public class RFRanker extends Ranker {
 	public RFRanker()
 	{		
 	}
-	public RFRanker(List<RankList> samples, int[] features)
+	public RFRanker(List<RankList> samples, int[] features, MetricScorer scorer)
 	{
-		super(samples, features);
+		super(samples, features, scorer);
 	}
 
 	public void init()
@@ -74,20 +76,21 @@ public class RFRanker extends Ranker {
 		//start the bagging process
 		for(int i=0;i<nBag;i++)
 		{
-			System.gc();
+			if(i % LambdaMART.gcCycle == 0)
+				System.gc();
 			Sampler sp = new Sampler();
 			//create a "bag" of samples by random sampling from the training set
 			List<RankList> bag = sp.doSampling(samples, subSamplingRate, true);
 			//"out-of-bag" samples
 			//List<RankList> outOfBag = sp.getRemains();
-			LambdaMART r = (LambdaMART)rf.createRanker(rType, bag, features);
+			LambdaMART r = (LambdaMART)rf.createRanker(rType, bag, features, scorer);
 			//r.setValidationSet(outOfBag);
 			
+			boolean tmp = Ranker.verbose;
 			Ranker.verbose = false;//turn of the progress messages from training this ranker
 			r.init();
-			r.set(scorer);
 			r.learn();
-			Ranker.verbose = true;//turn it back on
+			Ranker.verbose = tmp;
 			//PRINTLN(new int[]{9, 9, 11}, new String[]{"b["+(i+1)+"]", SimpleMath.round(r.getScoreOnTrainingData(), 4)+"", SimpleMath.round(r.getScoreOnValidationData(), 4)+""});
 			PRINTLN(new int[]{9, 9}, new String[]{"b["+(i+1)+"]", SimpleMath.round(r.getScoreOnTrainingData(), 4)+""});
 			ensembles[i] = r.getEnsemble();
@@ -160,9 +163,21 @@ public class RFRanker extends Ranker {
 				}				
 			}
 			in.close();
+			HashSet<Integer> uniqueFeatures = new HashSet<Integer>();
 			ensembles = new Ensemble[ens.size()];
 			for(int i=0;i<ens.size();i++)
+			{
 				ensembles[i] = ens.get(i);
+				//obtain used features
+				int[] fids = ens.get(i).getFeatures();
+				for(int f=0;f<fids.length;f++)
+					if(!uniqueFeatures.contains(fids[f]))
+						uniqueFeatures.add(fids[f]);
+			}
+			int fi = 0;
+			features = new int[uniqueFeatures.size()];
+			for(Integer f : uniqueFeatures)
+				features[fi++] = f.intValue();
 		}
 		catch(Exception ex)
 		{

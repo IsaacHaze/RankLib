@@ -12,6 +12,7 @@ package ciir.umass.edu.learning.tree;
 import java.util.List;
 import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.Ranker;
+import ciir.umass.edu.metric.MetricScorer;
 
 /**
  * @author vdang
@@ -27,9 +28,9 @@ public class MART extends LambdaMART {
 	public MART()
 	{		
 	}
-	public MART(List<RankList> samples, int[] features)
+	public MART(List<RankList> samples, int[] features, MetricScorer scorer)
 	{
-		super(samples, features);
+		super(samples, features, scorer);
 	}
 	
 	public Ranker clone()

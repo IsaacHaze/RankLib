@@ -45,6 +45,22 @@ public class MyThreadPool extends ThreadPoolExecutor {
 	{
 		return size;
 	}
+	public WorkerThread[] execute(WorkerThread worker, int nTasks)
+	{
+		MyThreadPool p = MyThreadPool.getInstance();
+		int[] partition = p.partition(nTasks);
+		WorkerThread[] workers = new WorkerThread[partition.length-1];
+		for(int i=0;i<partition.length-1;i++)
+		{
+			WorkerThread w = worker.clone();
+			w.set(partition[i], partition[i+1]-1);
+			workers[i] = w;
+			p.execute(w);
+		}
+		await();
+		return workers;
+	}
+	
 	public void await()
 	{
 		for(int i=0;i<size;i++)
@@ -71,6 +87,7 @@ public class MyThreadPool extends ThreadPoolExecutor {
 			partition[i] = partition[i-1] + chunkSize + ((i<=mod)?1:0);
 		return partition;
 	}
+	
 	
 	public void execute(Runnable task) 
 	{

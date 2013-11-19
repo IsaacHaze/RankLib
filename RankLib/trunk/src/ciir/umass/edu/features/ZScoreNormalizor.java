@@ -10,6 +10,7 @@
 package ciir.umass.edu.features;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 import ciir.umass.edu.learning.DataPoint;
 import ciir.umass.edu.learning.RankList;
@@ -26,34 +27,34 @@ public class ZScoreNormalizor extends Normalizer {
 			System.exit(1);
 		}
 		int nFeature = DataPoint.getFeatureCount();
-		float[] mean = new float[nFeature];
-		Arrays.fill(mean, 0);
+		double[] means = new double[nFeature];
+		Arrays.fill(means, 0);
 		for(int i=0;i<rl.size();i++)
 		{
 			DataPoint dp = rl.get(i);
 			for(int j=1;j<=nFeature;j++)
-				mean[j-1] += dp.getFeatureValue(j);
+				means[j-1] += dp.getFeatureValue(j);
 		}
 		
 		for(int j=1;j<=nFeature;j++)
 		{
-			mean[j-1] = mean[j-1] / rl.size();
-			float std = 0;
+			means[j-1] = means[j-1] / rl.size();
+			double std = 0;
 			for(int i=0;i<rl.size();i++)
 			{
 				DataPoint p = rl.get(i);
-				float x = p.getFeatureValue(j) - mean[j-1];
+				double x = p.getFeatureValue(j) - means[j-1];
 				std += x*x;
 			}
-			std = (float) Math.sqrt(std / (rl.size()-1));
+			std = Math.sqrt(std / (rl.size()-1));
 			//normalize
 			if(std > 0)
 			{
 				for(int i=0;i<rl.size();i++)
 				{
 					DataPoint p = rl.get(i);
-					float x = (p.getFeatureValue(j) - mean[j-1])/std;//x ~ standard normal (0, 1)
-					p.setFeatureValue(j, x);
+					double x = (p.getFeatureValue(j) - means[j-1])/std;//x ~ standard normal (0, 1)
+					p.setFeatureValue(j, (float)x);
 				}
 			}
 		}
@@ -65,34 +66,38 @@ public class ZScoreNormalizor extends Normalizer {
 			System.out.println("Error in SumNormalizor::normalize(): The input ranked list is empty");
 			System.exit(1);
 		}
-		float[] mean = new float[fids.length];
-		Arrays.fill(mean, 0);
+		
+		//remove duplicate features from the input @fids ==> avoid normalizing the same features multiple times
+		fids = removeDuplicateFeatures(fids);
+		
+		double[] means = new double[fids.length];
+		Arrays.fill(means, 0);
 		for(int i=0;i<rl.size();i++)
 		{
 			DataPoint dp = rl.get(i);
 			for(int j=0;j<fids.length;j++)
-				mean[j] += dp.getFeatureValue(fids[j]);
+				means[j] += dp.getFeatureValue(fids[j]);
 		}
 		
 		for(int j=0;j<fids.length;j++)
 		{
-			mean[j] = mean[j] / rl.size();
-			float std = 0;
+			means[j] = means[j] / rl.size();
+			double std = 0;
 			for(int i=0;i<rl.size();i++)
 			{
 				DataPoint p = rl.get(i);
-				float x = p.getFeatureValue(fids[j]) - mean[j];
+				double x = p.getFeatureValue(fids[j]) - means[j];
 				std += x*x;
 			}
-			std = (float) Math.sqrt(std / (rl.size()-1));
+			std = Math.sqrt(std / (rl.size()-1));
 			//normalize
 			if(std > 0.0)
 			{
 				for(int i=0;i<rl.size();i++)
 				{
 					DataPoint p = rl.get(i);
-					float x = (p.getFeatureValue(fids[j]) - mean[j])/std;//x ~ standard normal (0, 1)
-					p.setFeatureValue(fids[j], x);
+					double x = (p.getFeatureValue(fids[j]) - means[j])/std;//x ~ standard normal (0, 1)
+					p.setFeatureValue(fids[j], (float)x);
 				}
 			}
 		}

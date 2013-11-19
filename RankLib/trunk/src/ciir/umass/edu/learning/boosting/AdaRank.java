@@ -13,13 +13,14 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.List;
 
 import ciir.umass.edu.learning.DataPoint;
 import ciir.umass.edu.learning.Ranker;
 import ciir.umass.edu.learning.boosting.WeakRanker;
 import ciir.umass.edu.learning.RankList;
+import ciir.umass.edu.metric.MetricScorer;
 import ciir.umass.edu.utilities.KeyValuePair;
 import ciir.umass.edu.utilities.SimpleMath;
 
@@ -37,7 +38,7 @@ public class AdaRank extends Ranker {
 	public static boolean trainWithEnqueue = true;
 	public static int maxSelCount = 5;//the max. number of times a feature can be selected consecutively before being removed
 	
-	protected Hashtable<Integer, Integer> usedFeatures = new Hashtable<Integer, Integer>();
+	protected HashMap<Integer, Integer> usedFeatures = new HashMap<Integer, Integer>();
 	protected double[] sweight = null;//sample weight
 	protected List<WeakRanker> rankers = null;//alpha
 	protected List<Double> rweight = null;//weak rankers' weight
@@ -58,9 +59,9 @@ public class AdaRank extends Ranker {
 	{
 		
 	}
-	public AdaRank(List<RankList> samples, int[] features)
+	public AdaRank(List<RankList> samples, int[] features, MetricScorer scorer)
 	{
-		super(samples, features);
+		super(samples, features, scorer);
 	}
 	
 	private void updateBestModelOnValidation()

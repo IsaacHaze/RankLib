@@ -15,6 +15,7 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
 
+import ciir.umass.edu.metric.MetricScorer;
 import ciir.umass.edu.utilities.KeyValuePair;
 import ciir.umass.edu.utilities.SimpleMath;
 
@@ -28,9 +29,9 @@ public class LinearRegRank extends Ranker {
 	public LinearRegRank()
 	{		
 	}
-	public LinearRegRank(List<RankList> samples, int[] features)
+	public LinearRegRank(List<RankList> samples, int[] features, MetricScorer scorer)
 	{
-		super(samples, features);
+		super(samples, features, scorer);
 	}
 	public void init()
 	{

@@ -87,4 +87,32 @@ public class SparseDataPoint extends DataPoint {
 		short r = locate(fid);
 		fVals[fid-1-r] = fval;
 	}
+	public String toString()
+	{
+		String output = label + " " + "id:" + id + " ";
+		int j=0;
+		for(int i=1;i<=getFeatureCount();i++)
+		{
+			if(zero[j] != i)
+				output += i + ":" + fVals[i] + ((i==fVals.length-1)?"":" ");
+			else
+				j++;
+		}
+		output += " " + description;
+		return output;
+	}
+	/**
+	 * NOTE that @fVals only contains non-zero features
+	 */
+	public void setFeatureVector(float[] fVals)
+	{
+		this.fVals = fVals;
+	}
+	/**
+	 * NOTE that the returned vector only contains non-zero features
+	 */
+	public float[] getFeatureVector()
+	{
+		return fVals;
+	}
 }

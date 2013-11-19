@@ -18,6 +18,7 @@ import java.util.List;
 import ciir.umass.edu.learning.DataPoint;
 import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.Ranker;
+import ciir.umass.edu.metric.MetricScorer;
 import ciir.umass.edu.utilities.SimpleMath;
 
 public class ListNet extends RankNet {
@@ -30,9 +31,9 @@ public class ListNet extends RankNet {
 	public ListNet()
 	{		
 	}
-	public ListNet(List<RankList> samples, int [] features)
+	public ListNet(List<RankList> samples, int [] features, MetricScorer scorer)
 	{
-		super(samples, features);
+		super(samples, features, scorer);
 	}
 	
 	protected float[] feedForward(RankList rl)

@@ -9,8 +9,11 @@
 
 package ciir.umass.edu.eval;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -31,12 +34,12 @@ import ciir.umass.edu.learning.RANKER_TYPE;
 import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.Ranker;
 import ciir.umass.edu.learning.RankerFactory;
+import ciir.umass.edu.learning.RankerTrainer;
 import ciir.umass.edu.metric.ERRScorer;
 import ciir.umass.edu.metric.METRIC;
 import ciir.umass.edu.metric.MetricScorer;
 import ciir.umass.edu.metric.MetricScorerFactory;
 import ciir.umass.edu.utilities.FileUtils;
-import ciir.umass.edu.utilities.LinearComputer;
 import ciir.umass.edu.utilities.MergeSorter;
 import ciir.umass.edu.utilities.MyThreadPool;
 import ciir.umass.edu.utilities.SimpleMath;
@@ -169,7 +172,7 @@ public class Evaluator {
 			System.out.println("\t[ -leaf <l> ]\t\tNumber of leaves for each tree (default=" + LambdaMART.nTreeLeaves + ")");
 			System.out.println("\t[ -shrinkage <factor> ]\tShrinkage, or learning rate (default=" + LambdaMART.learningRate + ")");
 			System.out.println("\t[ -tc <k> ]\t\tNumber of threshold candidates for tree spliting. -1 to use all feature values (default=" + LambdaMART.nThreshold + ")");
-			System.out.println("\t[ -mls <n> ]\t\tMin leaf support -- minimum #samples each leaf has to contain (default=" + LambdaMART.minLeafSupport + ")");
+			System.out.println("\t[ -mls <n> ]\t\tMin leaf support -- minimum % of docs each leaf has to contain (default=" + LambdaMART.minLeafSupport + ")");
 			System.out.println("\t[ -estop <e> ]\t\tStop early when no improvement is observed on validaton data in e consecutive rounds (default=" + LambdaMART.nRoundToStopEarly + ")");
 
 			System.out.println("");
@@ -188,7 +191,7 @@ public class Evaluator {
 			System.out.println("\t[ -leaf <l> ]\t\tNumber of leaves for each tree (default=" + RFRanker.nTreeLeaves + ")");
 			System.out.println("\t[ -shrinkage <factor> ]\tShrinkage, or learning rate (default=" + RFRanker.learningRate + ")");
 			System.out.println("\t[ -tc <k> ]\t\tNumber of threshold candidates for tree spliting. -1 to use all feature values (default=" + RFRanker.nThreshold + ")");
-			System.out.println("\t[ -mls <n> ]\t\tMin leaf support -- minimum #samples each leaf has to contain (default=" + RFRanker.minLeafSupport + ")");
+			System.out.println("\t[ -mls <n> ]\t\tMin leaf support -- minimum % of docs each leaf has to contain (default=" + RFRanker.minLeafSupport + ")");
 
 			System.out.println("");
 			System.out.println("    [-] Linear Regression-specific parameters");
@@ -354,10 +357,13 @@ public class Evaluator {
 			else if(args[i].compareTo("-mls")==0)
 			{
 				LambdaMART.minLeafSupport = Integer.parseInt(args[++i]);
-				RFRanker.minLeafSupport = Integer.parseInt(args[i]);
+				RFRanker.minLeafSupport = LambdaMART.minLeafSupport;
 			}
 			else if(args[i].compareTo("-estop")==0)
 				LambdaMART.nRoundToStopEarly = Integer.parseInt(args[++i]);
+			//for debugging
+			else if(args[i].compareTo("-gcc")==0)
+				LambdaMART.gcCycle = Integer.parseInt(args[++i]);
 			
 			//Random forest
 			else if(args[i].compareTo("-bag")==0)
@@ -366,6 +372,18 @@ public class Evaluator {
 				RFRanker.subSamplingRate = Float.parseFloat(args[++i]);
 			else if(args[i].compareTo("-frate")==0)
 				RFRanker.featureSamplingRate = Float.parseFloat(args[++i]);
+			else if(args[i].compareTo("-rtype")==0)
+			{
+				int rt = Integer.parseInt(args[++i]);
+				if(rt == 0 || rt == 6)
+					RFRanker.rType = rType2[rt];
+				else
+				{
+					System.out.println(rType[rt] + " cannot be bagged. Random Forests only supports MART/LambdaMART.");
+					System.out.println("System will now exit.");
+					System.exit(1);      
+				}
+			}
 			
 			else if(args[i].compareTo("-L2")==0)
 				LinearRegRank.lambda = Double.parseDouble(args[++i]);
@@ -523,7 +541,8 @@ public class Evaluator {
 					else if(savedModelFiles.size() == 1) // a single model
 						e.test(savedModelFile, testFile, prpFile);
 				}
-				//This is *ONLY* for my personal use. It is *NOT* exposed via cmd-line
+				else if(scoreFile.compareTo("") != 0)
+					e.testWithScoreFile(testFile, scoreFile);
 				//It will evaluate the input ranking (without being re-ranked by any model) using any measure specified via metric2T
 				else
 					e.test(testFile, prpFile);
@@ -557,9 +576,6 @@ public class Evaluator {
 	protected MetricScorer trainScorer = null;
 	protected MetricScorer testScorer = null;
 	protected RANKER_TYPE type = RANKER_TYPE.MART;
-	
-	//variables for feature selection
-	protected List<LinearComputer> lcList = new ArrayList<LinearComputer>();
 	
 	public Evaluator(RANKER_TYPE rType, METRIC trainMetric, METRIC testMetric)
 	{
@@ -679,11 +695,8 @@ public class Evaluator {
 				normalize(test, features);
 		}		
 		
-		Ranker ranker = rFact.createRanker(type, train, features);
-		ranker.set(trainScorer);
-		ranker.setValidationSet(validation);
-		ranker.init();
-		ranker.learn();
+		RankerTrainer trainer = new RankerTrainer();
+		Ranker ranker = trainer.train(type, train, validation, features, trainScorer);
 		
 		if(test != null)
 		{
@@ -717,11 +730,8 @@ public class Evaluator {
 				normalize(validation, features);
 		}
 
-		Ranker ranker = rFact.createRanker(type, trainingData, features);
-		ranker.set(trainScorer);
-		ranker.setValidationSet(validation);
-		ranker.init();
-		ranker.learn();
+		RankerTrainer trainer = new RankerTrainer();
+		Ranker ranker = trainer.train(type, trainingData, validation, features, trainScorer);
 		
 		double rankScore = evaluate(ranker, testData);
 		
@@ -754,11 +764,8 @@ public class Evaluator {
 				normalize(test, features);
 		}
 		
-		Ranker ranker = rFact.createRanker(type, train, features);
-		ranker.set(trainScorer);
-		ranker.setValidationSet(validation);
-		ranker.init();
-		ranker.learn();
+		RankerTrainer trainer = new RankerTrainer();
+		Ranker ranker = trainer.train(type, train, validation, features, trainScorer);
 		
 		if(test != null)
 		{
@@ -833,11 +840,8 @@ public class Evaluator {
 				vali = validationData.get(i);
 			List<RankList> test = testData.get(i);
 			
-			ranker = rFact.createRanker(type, train, features);
-			ranker.setValidationSet(vali);
-			ranker.set(trainScorer);
-			ranker.init();
-			ranker.learn();
+			RankerTrainer trainer = new RankerTrainer();
+			ranker = trainer.train(type, train, vali, features, trainScorer);
 			
 			double s2 = evaluate(ranker, test);
 			scoreOnTrain += ranker.getScoreOnTrainingData();
@@ -1021,6 +1025,46 @@ public class Evaluator {
 			System.out.println("Per-ranked list performance saved to: " + prpFile);
 		}
 	}
+	/**
+	 * Re-order the input rankings and measure their effectiveness (in -metric2T)
+	 * @param testFile Input rankings
+	 * @param scoreFile The model score file on each of the documents
+	 */
+	public void testWithScoreFile(String testFile, String scoreFile)
+	{
+		try {
+			List<RankList> test = readInput(testFile);
+			String content = "";
+			BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(scoreFile), "ASCII"));
+			List<Double> scores = new ArrayList<Double>();
+			while((content = in.readLine()) != null)
+			{
+				content = content.trim();
+				if(content.compareTo("") == 0)
+					continue;
+				scores.add(Double.parseDouble(content));
+			}
+			in.close();
+			int k = 0;
+			for(int i=0;i<test.size();i++)
+			{
+				RankList rl = test.get(i);
+				double[] s = new double[rl.size()];
+				for(int j=0;j<rl.size();j++)
+					s[j] = scores.get(k++);
+				rl = new RankList(rl, MergeSorter.sort(s, false));
+				test.set(i, rl);
+			}
+			
+			double rankScore = evaluate(null, test);
+			System.out.println(testScorer.name() + " on test data: " + SimpleMath.round(rankScore, 4));
+		}
+		catch(Exception ex)
+		{
+			System.out.println(ex.toString());
+		}
+	}
+
 	/**
 	 * Write the model's score for each of the documents in a test rankings. 
 	 * @param modelFile Pre-trained model
