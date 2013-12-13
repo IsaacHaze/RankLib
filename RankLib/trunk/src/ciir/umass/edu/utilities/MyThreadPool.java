@@ -34,6 +34,8 @@ public class MyThreadPool extends ThreadPoolExecutor {
 	private static MyThreadPool singleton = null;
 	public static MyThreadPool getInstance()
 	{
+		if(singleton == null)
+			init(Runtime.getRuntime().availableProcessors());
 		return singleton;
 	}
 	
@@ -79,11 +81,12 @@ public class MyThreadPool extends ThreadPoolExecutor {
 	}
 	public int[] partition(int listSize)
 	{
-		int chunkSize = listSize/size;
-		int mod = listSize % size;
-		int[] partition = new int[size+1];
+		int nChunks = Math.min(listSize, size);
+		int chunkSize = listSize/nChunks;
+		int mod = listSize % nChunks;
+		int[] partition = new int[nChunks+1];
 		partition[0] = 0;
-		for(int i=1;i<=size;i++)
+		for(int i=1;i<=nChunks;i++)
 			partition[i] = partition[i-1] + chunkSize + ((i<=mod)?1:0);
 		return partition;
 	}
