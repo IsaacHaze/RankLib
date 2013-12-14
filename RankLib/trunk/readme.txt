@@ -1,16 +1,16 @@
-Date:		November, 2013.
-Version:	2.2.1
+Date:		December, 2013.
+Version:	2.3
 ======================================
 
 WHAT'S NEW
+- [bugfix] RankLib crashes when #features < #threads with some algorithms.
 - [bugfix] Normalization issue with RankBoost (the command "-test <test-data> -load <RB-model-file> -norm zscore/sum" incorrectly normalizes the test data).
 - [bugfix] Reciprocal rank is always measured off the entire ranked list, regardless of the specified cut-off point.
 - [bugfix] MAP change when swaping two documents in a ranked list is incorrect. This only affects LambdaMART trained with MAP. It doesn't seem to have any significant impact on model effectiveness though.
 - Slight efficiency improvement.
-- RankLib can now be used to evaluate models trained using other LTR software packages (e.g. SVM-Rank)
-- [in progress] Create ranker from external jar files (reflection)
-
-TO-DO: incorporate Siddhartha Bagaria's patch for improving support for sparse dataset .
+- RankLib can now be used to evaluate (well, kind of) models trained using other LTR software packages (e.g. SVM-Rank)
+- Siddhartha Bagaria's patch for sparse dataset is included but not yet fully enabled since it's not thread-safe.
+- Linear regression (L2 norm) should now work properly
 
 ========================
 v 2.2
