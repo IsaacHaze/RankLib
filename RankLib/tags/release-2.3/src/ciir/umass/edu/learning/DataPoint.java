@@ -17,54 +17,47 @@ import java.util.Arrays;
  * This class implements objects to be ranked. In the context of Information retrieval, each instance is a query-url pair represented by a n-dimentional feature vector.
  * It should be general enough for other ranking applications as well (not limited to just IR I hope). 
  */
-public class DataPoint {
-	public static float UNKNOWN = -1000000;
+public abstract class DataPoint {
+	
 	public static int MAX_FEATURE = 51;
 	public static int FEATURE_INCREASE = 10;
+	protected static int featureCount = 0;
 	
-	public static int featureCount = 0;
+	protected static float UNKNOWN = Float.NaN;
 	
 	//attributes
 	protected float label = 0.0f;//[ground truth] the real label of the data point (e.g. its degree of relevance according to the relevance judgment)
-	protected String id = "";//id of this datapoint (e.g. query-id)
-	protected float[] fVals = null;//fVals[0] is un-used. Feature id MUST start from 1
+	protected String id = "";//id of this data point (e.g. query-id)
 	protected String description = "";
+	protected float[] fVals = null; //fVals[0] is un-used. Feature id MUST start from 1
+	
+	//helper attributes
+	protected int knownFeatures; // number of known feature values
 	
 	//internal to learning procedures
 	protected double cached = -1.0;//the latest evaluation score of the learned model on this data point
 	
-	protected String getKey(String pair)
+	protected static boolean isUnknown(float fVal)
+	{
+		return Float.isNaN(fVal);
+	}
+	protected static String getKey(String pair)
 	{
 		return pair.substring(0, pair.indexOf(":"));
 	}
-	protected String getValue(String pair)
+	protected static String getValue(String pair)
 	{
 		return pair.substring(pair.lastIndexOf(":")+1);
 	}	
-	protected DataPoint()
-	{		
-	}
-	public DataPoint(DataPoint dp)
-	{
-		label = dp.label;
-		id = dp.id;
-		description = dp.description;
-		cached = dp.cached;
-		fVals = new float[dp.fVals.length];
-		System.arraycopy(dp.fVals, 0, fVals, 0, dp.fVals.length);
-	}
+	
 	/**
-	 * The input must have the form: 
+	 * Parse the given line of text to construct a dense array of feature values and reset metadata.
 	 * @param text
+	 * @return Dense array of feature values
 	 */
-	public DataPoint(String text)
+	protected float[] parse(String text)
 	{
-		parse(text);
-	}
-	protected int parse(String text)
-	{
-		int nonZeroCount = 0;
-		fVals = new float[MAX_FEATURE];
+		float[] fVals = new float[MAX_FEATURE];
 		Arrays.fill(fVals, UNKNOWN);
 		int lastFeature = -1;
 		try {
@@ -86,6 +79,7 @@ public class DataPoint {
 			String val = "";
 			for(int i=2;i<fs.length;i++)
 			{
+				knownFeatures++;
 				key = getKey(fs[i]);
 				val = getValue(fs[i]);
 				int f = Integer.parseInt(key);
@@ -99,11 +93,11 @@ public class DataPoint {
 					fVals = tmp;
 				}
 				fVals[f] = Float.parseFloat(val);
-				if(fVals[f] != 0 && fVals[f] != UNKNOWN)
-					nonZeroCount++;
+				
 				if(f > featureCount)//#feature will be the max_id observed
 					featureCount = f;
-				if(f > lastFeature)//note than lastFeature is the max_id observed for this current data point, whereas featureCount is the max_id observed on the entire dataset
+				
+				if(f > lastFeature)//note that lastFeature is the max_id observed for this current data point, whereas featureCount is the max_id observed on the entire dataset
 					lastFeature = f;
 			}
 			//shrink fVals
@@ -116,7 +110,46 @@ public class DataPoint {
 			System.out.println("Error in DataPoint::parse(): " + ex.toString());
 			System.exit(1);
 		}
-		return nonZeroCount;
+		return fVals;
+	}
+	
+	/**
+	* Get the value of the feature with the given feature ID
+	* @param fid
+	* @return
+	*/
+	public abstract float getFeatureValue(int fid);
+	
+	/**
+	* Set the value of the feature with the given feature ID
+	* @param fid
+	* @param fval
+	*/
+	public abstract void setFeatureValue(int fid, float fval);
+	
+	/**
+	* Sets the value of all features with the provided dense array of feature values
+	*/
+	public abstract void setFeatureVector(float[] dfVals);
+	
+	/**
+	* Gets the value of all features as a dense array of feature values.
+	*/
+	public abstract float[] getFeatureVector();
+	
+	/**
+	* Default constructor. No-op.
+	*/
+	protected DataPoint() {};
+	
+	/**
+	* The input must have the form: 
+	* @param text
+	*/
+	protected DataPoint(String text)
+	{
+		float[] fVals = parse(text);
+		setFeatureVector(fVals);
 	}
 	
 	public String getID()
@@ -157,48 +190,19 @@ public class DataPoint {
 		cached = -100000000.0f;;
 	}
 	
-	public static int getFeatureCount()
-	{
-		return featureCount;
-	}
-	
-	//Need overriding in sub-classes
-	public float getFeatureValue(int fid)
-	{
-		if(fid <= 0 || fid >= fVals.length)
-		{
-			System.out.println("Error in DataPoint::getFeatureValue(): requesting unspecified feature, fid=" + fid);
-			System.out.println("System will now exit.");
-			System.exit(1);
-		}
-		if(fVals[fid] == UNKNOWN)//value for unspecified feature is 0
-			return 0;
-		return fVals[fid];
-	}
-	public void setFeatureValue(int fid, float fval) 
-	{
-		if(fid <= 0 || fid >= fVals.length)
-		{
-			System.out.println("Error in DataPoint::setFeatureValue(): feature (id=" + fid + ") not found.");
-			System.exit(1);
-		}
-		fVals[fid] = fval;
-	}	
 	public String toString()
 	{
+		float[] fVals = getFeatureVector();
 		String output = ((int)label) + " " + "qid:" + id + " ";
 		for(int i=1;i<fVals.length;i++)
-			if(fVals[i] != UNKNOWN)
+			if(!isUnknown(fVals[i]))
 				output += i + ":" + fVals[i] + ((i==fVals.length-1)?"":" ");
 		output += " " + description;
 		return output;
 	}
-	public void setFeatureVector(float[] fVals)
+	
+	public static int getFeatureCount()
 	{
-		this.fVals = fVals;
-	}
-	public float[] getFeatureVector()
-	{
-		return fVals;
-	}
+		return featureCount;
+	}	
 }
