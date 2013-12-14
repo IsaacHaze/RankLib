@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 
 import ciir.umass.edu.learning.DataPoint;
+import ciir.umass.edu.learning.DenseDataPoint;
 import ciir.umass.edu.learning.SparseDataPoint;
 import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.utilities.FileUtils;
@@ -165,7 +166,7 @@ public class FeatureManager {
 				if(useSparseRepresentation)
 					qp = new SparseDataPoint(content);
 				else
-					qp = new DataPoint(content);
+					qp = new DenseDataPoint(content);
 
 				if(lastID.compareTo("")!=0 && lastID.compareTo(qp.getID())!=0)
 				{

@@ -9,110 +9,135 @@
 
 package ciir.umass.edu.learning;
 
+import java.util.Arrays;
+
+/**
+ * Implements a sparse data point using a compressed sparse row data structure
+ * @author Siddhartha Bagaria
+ */
 public class SparseDataPoint extends DataPoint {
 
-	public static void main(String[] args)
-	{
-		SparseDataPoint spd = new SparseDataPoint("3 qid:5 1:3");
-		spd.zero = new short[]{1, 4, 6, 8, 10};
-		System.out.println(spd.locate(11));
-	}
+	// Access pattern of the feature values
+	private enum accessPattern {SEQUENTIAL, RANDOM};
+	private static accessPattern searchPattern = accessPattern.RANDOM;
 	
-	public short[] zero = null;
-	public short locate(int fid)
-	{
-		if(zero == null)//this feature vector has no zero entries
-			return 0;
-		
-		int l = 0;
-		int r = zero.length-1;
-		do{
-			int m = (l+r)/2;
-			if(fid > zero[m])
-				l = m+1;
-			else if(fid < zero[m])
-				r = m-1;
-			else //locate the missing feature
-				return -1;
-		}while(l <= r);
-		if(r >= zero.length-1)
-			return (short)zero.length;
-		return (short)(r+1);
+	// Profiling variables
+	// private static int numCalls = 0;
+	// private static float avgTime = 0;
+	
+	// The feature ids for known values
+	int fIds[];
+	
+	// The feature values for corresponding Ids
+	//float fVals[]; //moved to the parent class
+	
+	// Internal search optimizers. Currently unused.
+	int lastMinId = -1;
+	int lastMinPos = -1;
+	
+	public SparseDataPoint(String text) {
+		super(text);
 	}
-	public SparseDataPoint(String text)
-	{
-		int nonZeroCount = parse(text);
-		if(nonZeroCount < getFeatureCount())
+
+	public SparseDataPoint(SparseDataPoint dp)
+ 	{
+		label = dp.label;
+		id = dp.id;
+		description = dp.description;
+		cached = dp.cached;
+		fIds = new int[dp.fIds.length];
+		fVals = new float[dp.fVals.length];
+		System.arraycopy(dp.fIds, 0, fIds, 0, dp.fIds.length);
+		System.arraycopy(dp.fVals, 0, fVals, 0, dp.fVals.length);
+ 	}
+ 	
+	private int locate(int fid) {
+		if (searchPattern == accessPattern.SEQUENTIAL)
 		{
-			zero = new short[getFeatureCount()-nonZeroCount];		
-			float[] tmp = new float[nonZeroCount];
-			short nzc = 0;
-			short zc = 0;
-			for(short fid=1;fid<fVals.length;fid++)
+			if (lastMinId > fid)
 			{
-				if(fVals[fid] != 0 && fVals[fid] != UNKNOWN)
-					tmp[nzc++] = fVals[fid];
-				else
-					zero[zc++] = fid;
+				lastMinId = -1;
+				lastMinPos = -1;
 			}
-			fVals = tmp;			
+			while (lastMinPos < knownFeatures && lastMinId < fid)
+				lastMinId = fIds[++lastMinPos];
+			if (lastMinId == fid)
+				return lastMinPos;
+		}
+		else if (searchPattern == accessPattern.RANDOM)
+		{
+			int pos = Arrays.binarySearch(fIds, fid);
+			if (pos >= 0)
+				return pos;
 		}
 		else
-		{
-			float[] tmp = new float[fVals.length-1];
-			System.arraycopy(fVals, 1, tmp, 0, tmp.length);
-			fVals = tmp;
-		}
+			System.err.println("Invalid search pattern specified for sparse data points.");
+
+		return -1;
 	}
 	
+	@Override
 	public float getFeatureValue(int fid)
 	{
+		//long time = System.nanoTime();
 		if(fid <= 0 || fid > getFeatureCount())
 		{
 			System.out.println("Error in SparseDataPoint::getFeatureValue(): requesting invalid feature, fid=" + fid);
 			System.exit(1);
 		}
-		short r = locate(fid);
-		if(r == -1)
-			return 0;
-		return fVals[fid-1-r];
+		int pos = locate(fid);
+		//long completedIn = System.nanoTime() - time;
+		//avgTime = (avgTime*numCalls + completedIn)/(++numCalls);
+		//System.out.println("getFeatureValue average time: "+avgTime);
+		if(pos >= 0)
+			return fVals[pos];
+		
+		return 0; // Should ideally be returning unknown?
 	}
+	
+	@Override
 	public void setFeatureValue(int fid, float fval) 
 	{
 		if(fid <= 0 || fid > getFeatureCount())
 		{
-			System.out.println("Error in SparseDataPoint::setFeatureValue(): feature (id=" + fid + ") not found.");
+			System.out.println("Error in SparseDataPoint::setFeatureValue(): feature (id=" + fid + ") out of range.");
 			System.exit(1);
 		}
-		short r = locate(fid);
-		fVals[fid-1-r] = fval;
-	}
-	public String toString()
-	{
-		String output = label + " " + "id:" + id + " ";
-		int j=0;
-		for(int i=1;i<=getFeatureCount();i++)
+		int pos = locate(fid);
+		if(pos >= 0)
+			fVals[pos] = fval;
+		else
 		{
-			if(zero[j] != i)
-				output += i + ":" + fVals[i] + ((i==fVals.length-1)?"":" ");
-			else
-				j++;
+			System.err.println("Error in SparseDataPoint::setFeatureValue(): feature (id=" + fid + ") not found.");
+			System.exit(1);
 		}
-		output += " " + description;
-		return output;
 	}
-	/**
-	 * NOTE that @fVals only contains non-zero features
-	 */
-	public void setFeatureVector(float[] fVals)
+	
+	@Override
+	public void setFeatureVector(float[] dfVals)
 	{
-		this.fVals = fVals;
-	}
-	/**
-	 * NOTE that the returned vector only contains non-zero features
-	 */
+		fIds = new int[knownFeatures];
+		fVals = new float[knownFeatures];
+		int pos = 0;
+		for (int i=1; i<dfVals.length; i++)
+		{
+			if (!isUnknown(dfVals[i]))
+			{
+				fIds[pos] = i;
+				fVals[pos] = dfVals[i];
+				pos++;
+			}
+		}
+		assert(pos == knownFeatures);
+	}	
+	
+	@Override
 	public float[] getFeatureVector()
 	{
-		return fVals;
+		float[] dfVals = new float[fIds[knownFeatures -1]];
+		Arrays.fill(dfVals, UNKNOWN);
+		for (int i=0; i<knownFeatures; i++)
+			dfVals[fIds[i]] = fVals[i];
+		return dfVals;
 	}
 }
