@@ -10,7 +10,6 @@
 package ciir.umass.edu.features;
 
 import java.util.Arrays;
-import java.util.HashSet;
 
 import ciir.umass.edu.learning.DataPoint;
 import ciir.umass.edu.learning.RankList;
@@ -23,7 +22,7 @@ public class ZScoreNormalizor extends Normalizer {
 	public void normalize(RankList rl) {
 		if(rl.size() == 0)
 		{
-			System.out.println("Error in SumNormalizor::normalize(): The input ranked list is empty");
+			System.out.println("Error in ZScoreNormalizor::normalize(): The input ranked list is empty");
 			System.exit(1);
 		}
 		int nFeature = DataPoint.getFeatureCount();
