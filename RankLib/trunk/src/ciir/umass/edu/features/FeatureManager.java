@@ -9,21 +9,16 @@
 
 package ciir.umass.edu.features;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import ciir.umass.edu.learning.DataPoint;
+import ciir.umass.edu.learning.DenseDataPoint;
+import ciir.umass.edu.learning.RankList;
+import ciir.umass.edu.learning.SparseDataPoint;
+import ciir.umass.edu.utilities.FileUtils;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import ciir.umass.edu.learning.DataPoint;
-import ciir.umass.edu.learning.DenseDataPoint;
-import ciir.umass.edu.learning.SparseDataPoint;
-import ciir.umass.edu.learning.RankList;
-import ciir.umass.edu.utilities.FileUtils;
 
 public class FeatureManager {
 
@@ -370,8 +365,7 @@ public class FeatureManager {
 	}
 	/**
 	 * Split the input sample set into 2 chunks: one for training and one for either validation or testing
-	 * @param sampleFile
-	 * @param featureDefFile
+	 * @param samples
 	 * @param percentTrain The percentage of data used for training
 	 * @param trainingData
 	 * @param testData

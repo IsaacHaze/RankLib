@@ -9,21 +9,21 @@
 
 package ciir.umass.edu.learning;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.List;
-
 import ciir.umass.edu.learning.boosting.AdaRank;
 import ciir.umass.edu.learning.boosting.RankBoost;
 import ciir.umass.edu.learning.neuralnet.LambdaRank;
 import ciir.umass.edu.learning.neuralnet.ListNet;
 import ciir.umass.edu.learning.neuralnet.RankNet;
-import ciir.umass.edu.learning.tree.MART;
 import ciir.umass.edu.learning.tree.LambdaMART;
+import ciir.umass.edu.learning.tree.MART;
 import ciir.umass.edu.learning.tree.RFRanker;
 import ciir.umass.edu.metric.MetricScorer;
+import ciir.umass.edu.utilities.FileUtils;
+
+import java.io.BufferedReader;
+import java.io.StringReader;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * @author vdang
@@ -94,23 +94,27 @@ public class RankerFactory {
 		r.setMetricScorer(scorer);
 		return r;
 	}
-	public Ranker loadRanker(String modelFile)
+	public Ranker loadRankerFromFile(String modelFile)
 	{
-		Ranker r = null;
-		try {
-			BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(modelFile), "ASCII"));
-			String content = in.readLine();//read the first line to get the name of the ranking algorithm
-			in.close();
-			content = content.replace("## ", "").trim();
-			System.out.println("Model:\t\t" + content);
-			r = createRanker(map.get(content.toUpperCase()));
-			r.load(modelFile);
-		}
-		catch(Exception ex)
-		{
-			System.out.println("Error in RankerFactory.load(): " + ex.toString());
-			System.exit(1);
-		}
-		return r;
+    return loadRankerFromString(FileUtils.read(modelFile, "ASCII"));
 	}
+  public Ranker loadRankerFromString(String fullText)
+  {
+    Ranker r = null;
+    try {
+      BufferedReader in = new BufferedReader(new StringReader(fullText));
+      String content = in.readLine();//read the first line to get the name of the ranking algorithm
+      in.close();
+      content = content.replace("## ", "").trim();
+      System.out.println("Model:\t\t" + content);
+      r = createRanker(map.get(content.toUpperCase()));
+      r.loadFromString(fullText);
+    }
+    catch(Exception ex)
+    {
+      System.out.println("Error in RankerFactory.loadRanker(): " + ex.toString());
+      System.exit(1);
+    }
+    return r;
+  }
 }

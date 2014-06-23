@@ -9,23 +9,22 @@
 
 package ciir.umass.edu.learning;
 
+import ciir.umass.edu.metric.MetricScorer;
+import ciir.umass.edu.utilities.FileUtils;
+import ciir.umass.edu.utilities.MergeSorter;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import ciir.umass.edu.learning.RankList;
-import ciir.umass.edu.metric.MetricScorer;
-import ciir.umass.edu.utilities.FileUtils;
-import ciir.umass.edu.utilities.MergeSorter;
-
 /**
  * @author vdang
  * 
  * This class implements the generic Ranker interface. Each ranking algorithm implemented has to extend this class. 
  */
-public class Ranker {
+public abstract class Ranker {
 	public static boolean verbose = true;
 
 	protected List<RankList> samples = new ArrayList<RankList>();//training samples
@@ -38,8 +37,8 @@ public class Ranker {
 	
 	protected Ranker()
 	{
-		
-	}	
+
+	}
 	protected Ranker(List<RankList> samples, int[] features, MetricScorer scorer)
 	{
 		this.samples = samples;
@@ -150,36 +149,17 @@ public class Ranker {
 	/**
 	 * HAVE TO BE OVER-RIDDEN IN SUB-CLASSES
 	 */
-	public void init()
-	{
-	}
-	public void learn()
-	{
-	}
+	public abstract void init();
+	public abstract void learn();
 	public double eval(DataPoint p)
 	{
 		return -1.0;
 	}
-	public Ranker clone()
-	{
-		return null;
-	}
-	public String toString()
-	{
-		return "";
-	}
-	public String model()
-	{
-		return "[Not yet implemented]";
-	}
-	public void load(String fn)
-	{
-	}
-	public void printParameters()
-	{
-	}
-	public String name()
-	{
-		return "";
-	}
+
+  public abstract Ranker clone();
+  public abstract String toString();
+  public abstract String model();
+  public abstract void loadFromString(String fullText);
+  public abstract String name();
+  public abstract void printParameters();
 }

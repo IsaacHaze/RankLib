@@ -9,32 +9,15 @@
 
 package ciir.umass.edu.eval;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
-
-import ciir.umass.edu.features.FeatureManager;
-import ciir.umass.edu.features.LinearNormalizer;
-import ciir.umass.edu.features.Normalizer;
-import ciir.umass.edu.features.SumNormalizor;
-import ciir.umass.edu.features.ZScoreNormalizor;
-import ciir.umass.edu.learning.boosting.*;
-import ciir.umass.edu.learning.neuralnet.*;
+import ciir.umass.edu.features.*;
+import ciir.umass.edu.learning.*;
+import ciir.umass.edu.learning.boosting.AdaRank;
+import ciir.umass.edu.learning.boosting.RankBoost;
+import ciir.umass.edu.learning.neuralnet.ListNet;
+import ciir.umass.edu.learning.neuralnet.Neuron;
+import ciir.umass.edu.learning.neuralnet.RankNet;
 import ciir.umass.edu.learning.tree.LambdaMART;
 import ciir.umass.edu.learning.tree.RFRanker;
-import ciir.umass.edu.learning.CoorAscent;
-import ciir.umass.edu.learning.LinearRegRank;
-import ciir.umass.edu.learning.RANKER_TYPE;
-import ciir.umass.edu.learning.RankList;
-import ciir.umass.edu.learning.Ranker;
-import ciir.umass.edu.learning.RankerFactory;
-import ciir.umass.edu.learning.RankerTrainer;
 import ciir.umass.edu.metric.ERRScorer;
 import ciir.umass.edu.metric.METRIC;
 import ciir.umass.edu.metric.MetricScorer;
@@ -43,6 +26,11 @@ import ciir.umass.edu.utilities.FileUtils;
 import ciir.umass.edu.utilities.MergeSorter;
 import ciir.umass.edu.utilities.MyThreadPool;
 import ciir.umass.edu.utilities.SimpleMath;
+
+import java.io.*;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author vdang
@@ -912,7 +900,7 @@ public class Evaluator {
 	 */
 	public void test(String modelFile, String testFile, String prpFile)
 	{
-		Ranker ranker = rFact.loadRanker(modelFile);
+		Ranker ranker = rFact.loadRankerFromFile(modelFile);
 		int[] features = ranker.getFeatures();
 		List<RankList> test = readInput(testFile);
 		if(normalize)
@@ -962,7 +950,7 @@ public class Evaluator {
 		for(int f=0;f<nFold;f++)
 		{
 			List<RankList> test = testData.get(f);
-			Ranker ranker = rFact.loadRanker(modelFiles.get(f));
+			Ranker ranker = rFact.loadRankerFromFile(modelFiles.get(f));
 			int[] features = ranker.getFeatures();
 			if(normalize)
 				normalize(test, features);
@@ -1001,7 +989,7 @@ public class Evaluator {
 		for(int f=0;f<nFold;f++)
 		{
 			List<RankList> test = FeatureManager.readInput(testFiles.get(f));
-			Ranker ranker = rFact.loadRanker(modelFiles.get(f));
+			Ranker ranker = rFact.loadRankerFromFile(modelFiles.get(f));
 			int[] features = ranker.getFeatures();
 			if(normalize)
 				normalize(test, features);
@@ -1073,7 +1061,7 @@ public class Evaluator {
 	 */
 	public void score(String modelFile, String testFile, String outputFile)
 	{
-		Ranker ranker = rFact.loadRanker(modelFile);
+		Ranker ranker = rFact.loadRankerFromFile(modelFile);
 		int[] features = ranker.getFeatures();
 		List<RankList> test = readInput(testFile);
 		if(normalize)
@@ -1119,7 +1107,7 @@ public class Evaluator {
 			for(int f=0;f<nFold;f++)
 			{
 				List<RankList> test = testData.get(f);
-				Ranker ranker = rFact.loadRanker(modelFiles.get(f));
+				Ranker ranker = rFact.loadRankerFromFile(modelFiles.get(f));
 				int[] features = ranker.getFeatures();
 				if(normalize)
 					normalize(test, features);
@@ -1154,7 +1142,7 @@ public class Evaluator {
 			for(int f=0;f<nFold;f++)
 			{
 				List<RankList> test = FeatureManager.readInput(testFiles.get(f));
-				Ranker ranker = rFact.loadRanker(modelFiles.get(f));
+				Ranker ranker = rFact.loadRankerFromFile(modelFiles.get(f));
 				int[] features = ranker.getFeatures();
 				if(normalize)
 					normalize(test, features);
@@ -1183,7 +1171,7 @@ public class Evaluator {
 	 */
 	public void rank(String modelFile, String testFile, String indriRanking)
 	{
-		Ranker ranker = rFact.loadRanker(modelFile);
+		Ranker ranker = rFact.loadRankerFromFile(modelFile);
 		int[] features = ranker.getFeatures();
 		List<RankList> test = readInput(testFile);
 		if(normalize)
@@ -1261,7 +1249,7 @@ public class Evaluator {
 			for(int f=0;f<nFold;f++)
 			{
 				List<RankList> test = testData.get(f);
-				Ranker ranker = rFact.loadRanker(modelFiles.get(f));
+				Ranker ranker = rFact.loadRankerFromFile(modelFiles.get(f));
 				int[] features = ranker.getFeatures();
 				if(normalize)
 					normalize(test, features);
@@ -1303,7 +1291,7 @@ public class Evaluator {
 			for(int f=0;f<nFold;f++)
 			{
 				List<RankList> test = FeatureManager.readInput(testFiles.get(f));
-				Ranker ranker = rFact.loadRanker(modelFiles.get(f));
+				Ranker ranker = rFact.loadRankerFromFile(modelFiles.get(f));
 				int[] features = ranker.getFeatures();
 				if(normalize)
 					normalize(test, features);
