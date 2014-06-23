@@ -9,15 +9,14 @@
 
 package ciir.umass.edu.learning;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.List;
-
 import ciir.umass.edu.metric.MetricScorer;
 import ciir.umass.edu.utilities.KeyValuePair;
 import ciir.umass.edu.utilities.SimpleMath;
+
+import java.io.BufferedReader;
+import java.io.StringReader;
+import java.util.Arrays;
+import java.util.List;
 
 public class LinearRegRank extends Ranker {
 
@@ -125,14 +124,13 @@ public class LinearRegRank extends Ranker {
 		output += toString();
 		return output;
 	}
-	public void load(String fn)
+  @Override
+	public void loadFromString(String fullText)
 	{
 		try {
 			String content = "";
-			BufferedReader in = new BufferedReader(
-					new InputStreamReader(
-							new FileInputStream(fn), "ASCII"));
-			
+			BufferedReader in = new BufferedReader(new StringReader(fullText));
+
 			KeyValuePair kvp = null;
 			while((content = in.readLine()) != null)
 			{
@@ -145,7 +143,8 @@ public class LinearRegRank extends Ranker {
 				break;
 			}
 			in.close();
-			
+
+      assert(kvp != null);
 			List<String> keys = kvp.keys();
 			List<String> values = kvp.values();
 			weight = new double[keys.size()];
@@ -166,7 +165,7 @@ public class LinearRegRank extends Ranker {
 		}
 		catch(Exception ex)
 		{
-			System.out.println("Error in CoorAscent::load(): " + ex.toString());
+			System.out.println("Error in LinearRegRank::load(): " + ex.toString());
 		}
 	}
 	public void printParameters()

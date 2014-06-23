@@ -9,17 +9,16 @@
 
 package ciir.umass.edu.learning.neuralnet;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-
 import ciir.umass.edu.learning.DataPoint;
 import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.Ranker;
 import ciir.umass.edu.metric.MetricScorer;
 import ciir.umass.edu.utilities.SimpleMath;
+
+import java.io.BufferedReader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ListNet extends RankNet {
 	
@@ -180,14 +179,13 @@ public class ListNet extends RankNet {
 		output += toString();
 		return output;
 	}
-	public void load(String fn)
+  @Override
+	public void loadFromString(String fullText)
 	{
 		try {
 			String content = "";
-			BufferedReader in = new BufferedReader(
-					new InputStreamReader(
-							new FileInputStream(fn), "ASCII"));
-			
+			BufferedReader in = new BufferedReader(new StringReader(fullText));
+
 			List<String> l = new ArrayList<String>();
 			while((content = in.readLine()) != null)
 			{
